@@ -32,10 +32,10 @@ public class UserRepositoryImpl implements UserRepository {
     public User update(Long userId, User user) {
         User updateUser = users.get(userId);
 
-        if (user.getName() != null) {
+        if (user.getName() != null && !user.getName().isBlank()) {
             updateUser.setName(user.getName());
         }
-        if (user.getEmail() != null) {
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
             if (!updateUser.getEmail().equals(user.getEmail())) {
                 checkDuplicateEmail(user.getEmail());
                 updateUser.setEmail(user.getEmail());
@@ -64,6 +64,7 @@ public class UserRepositoryImpl implements UserRepository {
     private Long generatorId() {
         return ++id;
     }
+
 
     private void checkDuplicateEmail(String email) {
         List<String> emailsList = users.values().stream()

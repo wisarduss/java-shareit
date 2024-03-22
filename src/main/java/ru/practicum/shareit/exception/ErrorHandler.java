@@ -15,16 +15,10 @@ import java.io.StringWriter;
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
-    private String getStackTrace(Exception e) {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
-    }
 
-
-    @ExceptionHandler
+    @ExceptionHandler({IdNotFoundException.class, NotOwnerException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleObjectDoesNotExistException(final IdNotFoundException e) {
+    public ErrorResponse handleObjectDoesNotExistException(final RuntimeException e) {
         log.debug("Получен статус 404 not found {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
@@ -36,12 +30,12 @@ public class ErrorHandler {
         return new ErrorResponse(e.getMessage());
     }
 
-    @ExceptionHandler
+/*    @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleObjectDoesNotExistException(final NotOwnerException e) {
-        log.debug("Получен статус 500 internal server error found {}", e.getMessage());
+        log.debug("Получен статус 404 not found {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
-    }
+    }*/
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -66,6 +60,12 @@ public class ErrorHandler {
         log.debug("{}: {}", e.getClass().getSimpleName(), e.getMessage());
 
         return errorResponse;
+    }
+
+    private String getStackTrace(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 }
 

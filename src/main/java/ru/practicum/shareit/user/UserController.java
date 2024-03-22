@@ -1,37 +1,37 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.user.userDto.UserDto;
+import ru.practicum.shareit.utils.Create;
+import ru.practicum.shareit.utils.Update;
 
-import javax.validation.Valid;
 import java.util.List;
 
-/**
- * TODO Sprint add-controllers.
- */
 @RestController
 @RequestMapping(path = "/users")
 @RequiredArgsConstructor
 public class UserController {
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<UserDto> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @PostMapping
-    public User createUser(@Valid @RequestBody User user) {
-        return userService.createUser(user);
+    public UserDto createUser(@Validated(Create.class) @RequestBody UserDto userDto) {
+        return userService.createUser(userDto);
     }
 
     @PatchMapping("/{userId}")
-    public User patchUser(@PathVariable Long userId, @RequestBody User user) {
-        return userService.updateUser(userId, user);
+    public UserDto patchUser(@Validated(Update.class) @PathVariable Long userId, @RequestBody UserDto userDto) {
+        return userService.updateUser(userId, userDto);
     }
 
     @GetMapping("/{userId}")
-    public User getUserById(@PathVariable Long userId) {
+    public UserDto getUserById(@PathVariable Long userId) {
         return userService.getUserById(userId);
     }
 
