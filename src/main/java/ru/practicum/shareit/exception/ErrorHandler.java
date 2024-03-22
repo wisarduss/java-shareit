@@ -30,13 +30,6 @@ public class ErrorHandler {
         return new ErrorResponse(e.getMessage());
     }
 
-/*    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleObjectDoesNotExistException(final NotOwnerException e) {
-        log.debug("Получен статус 404 not found {}", e.getMessage());
-        return new ErrorResponse(e.getMessage());
-    }*/
-
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
