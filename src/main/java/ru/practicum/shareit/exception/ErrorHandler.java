@@ -7,9 +7,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 
 @Slf4j
@@ -34,8 +32,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
         ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("Ошибка валидации данных из запроса.")
-                .stackTrace(e.getFieldError().getDefaultMessage())
+                .error("Ошибка валидации данных из запроса.")
                 .build();
         log.debug("{}: {}", MethodArgumentNotValidException.class.getSimpleName(),
                 e.getFieldError().getDefaultMessage());
@@ -47,18 +44,34 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMissingRequestHeaderException(final MissingRequestHeaderException e) {
         ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("Отсутствует заголовок запроса: " + e.getHeaderName())
-                .stackTrace("Пожалуйста, добавьте заголовок запроса.")
+                .error("Отсутствует заголовок запроса: " + e.getHeaderName())
                 .build();
         log.debug("{}: {}", e.getClass().getSimpleName(), e.getMessage());
 
         return errorResponse;
     }
 
-    private String getStackTrace(Exception e) {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(ValidateException.class)
+    public ErrorResponse handleValidationExceptions(ValidateException ex) {
+        log.debug("Получен статус 400 bad request {}", ex.getMessage());
+        return new ErrorResponse(ex.getMessage());
     }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ErrorResponse handleValidationExceptions(MethodArgumentTypeMismatchException ex) {
+        log.debug("Получен статус 400 bad request {}", ex.getMessage());
+        return new ErrorResponse("Unknown state: " + ex.getValue().toString());
+    }
+
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(ItemNotAvailableException.class)
+    public ErrorResponse handleValidationExceptions(ItemNotAvailableException ex) {
+        log.debug("Получен статус 400 bad request {}", ex.getMessage());
+        return new ErrorResponse(ex.getMessage());
+    }
+
 }
 

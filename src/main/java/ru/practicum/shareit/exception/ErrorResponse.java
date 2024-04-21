@@ -1,19 +1,13 @@
 package ru.practicum.shareit.exception;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 
 @Builder
+@AllArgsConstructor
+@Getter
 public class ErrorResponse {
-    private String message;
 
-    public String stackTrace;
-
-    public ErrorResponse(String message, String stackTrace) {
-        this.message = message;
-        this.stackTrace = stackTrace;
-    }
-
-    public ErrorResponse(String message) {
-        this.message = message;
-    }
+    private String error;
 }
