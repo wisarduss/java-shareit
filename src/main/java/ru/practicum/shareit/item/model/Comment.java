@@ -1,15 +1,13 @@
 package ru.practicum.shareit.item.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import ru.practicum.shareit.user.User;
+import lombok.*;
+import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor

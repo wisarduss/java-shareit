@@ -1,15 +1,17 @@
 package ru.practicum.shareit.item.mapper;
 
+import lombok.experimental.UtilityClass;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemBookingDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemFullDto;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
+@UtilityClass
 public class ItemMapper {
 
     public static ItemDto itemToItemDto(Item item) {

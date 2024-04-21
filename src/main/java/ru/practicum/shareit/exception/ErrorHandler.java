@@ -54,12 +54,14 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ValidateException.class)
     public ErrorResponse handleValidationExceptions(ValidateException ex) {
+        log.debug("Получен статус 400 bad request {}", ex.getMessage());
         return new ErrorResponse(ex.getMessage());
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ErrorResponse handleValidationExceptions(MethodArgumentTypeMismatchException ex) {
+        log.debug("Получен статус 400 bad request {}", ex.getMessage());
         return new ErrorResponse("Unknown state: " + ex.getValue().toString());
     }
 
@@ -67,6 +69,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ItemNotAvailableException.class)
     public ErrorResponse handleValidationExceptions(ItemNotAvailableException ex) {
+        log.debug("Получен статус 400 bad request {}", ex.getMessage());
         return new ErrorResponse(ex.getMessage());
     }
 

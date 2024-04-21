@@ -3,6 +3,7 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
@@ -18,8 +19,8 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
+import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -37,6 +38,7 @@ public class ItemServiceImpl implements ItemService {
     private final BookingRepository bookingRepository;
 
     @Override
+    @Transactional
     public ItemDto createItem(Long userId, ItemDto itemDto) {
         log.debug("Вещь создана");
         User user = userRepository.findById(userId)
@@ -46,6 +48,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemDto updateItem(Long userId, ItemDto itemDto, Long itemId) {
         log.debug("Вещь обновлена");
         Item item = itemRepository.getById(itemId);

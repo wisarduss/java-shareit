@@ -16,8 +16,8 @@ import ru.practicum.shareit.exception.RequestStatusException;
 import ru.practicum.shareit.exception.ValidateException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
+import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
@@ -34,6 +34,7 @@ public class BookingServiceImpl implements BookingService {
     private final EntityManager entityManager;
 
     @Override
+    @Transactional
     public BookingDto create(Long bookerId, BookingUpdateDto bookingParam) {
         validateDate(bookingParam);
         User user = userRepository.findById(bookerId)
