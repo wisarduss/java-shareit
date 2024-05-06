@@ -51,6 +51,13 @@ public class ErrorHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(IdNotFoundException.class)
+    public ErrorResponse handleValidationExceptions(IdNotFoundException ex) {
+        log.debug("Получен статус 404 not found {}", ex.getMessage());
+        return new ErrorResponse(ex.getMessage());
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ErrorResponse handleValidationExceptions(MethodArgumentTypeMismatchException ex) {
