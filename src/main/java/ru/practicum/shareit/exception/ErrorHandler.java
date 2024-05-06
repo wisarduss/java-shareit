@@ -14,13 +14,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler({IdNotFoundException.class, NotOwnerException.class})
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleObjectDoesNotExistException(final RuntimeException e) {
-        log.debug("Получен статус 404 not found {}", e.getMessage());
-        return new ErrorResponse(e.getMessage());
-    }
-
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleObjectDoesNotExistException(final AlreadyExistException e) {
