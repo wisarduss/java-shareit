@@ -133,7 +133,7 @@ public class BookingControllerTest {
 
     @Test
     void bookUserNotFound() throws Exception {
-        when(bookingService.getBooking(anyLong(), any()))
+        when(bookingService.create(anyLong(), any()))
                 .thenThrow(IdNotFoundException.class);
 
         BookingUpdateDto booking = BookingUpdateDto.builder()
@@ -178,7 +178,7 @@ public class BookingControllerTest {
 
     @Test
     void bookItemNotAvailable() throws Exception {
-        when(bookingService.getBooking(anyLong(), any()))
+        when(bookingService.create(anyLong(), any()))
                 .thenThrow(IdNotFoundException.class);
 
         BookingUpdateDto booking = BookingUpdateDto.builder()
@@ -210,7 +210,7 @@ public class BookingControllerTest {
                 .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        when(bookingService.getBooking(anyLong(), any()))
+        when(bookingService.create(anyLong(), any()))
                 .thenReturn(expected);
 
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
