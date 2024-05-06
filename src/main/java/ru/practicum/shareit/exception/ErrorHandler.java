@@ -33,17 +33,6 @@ public class ErrorHandler {
         return errorResponse;
     }
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleMissingRequestHeaderException(final MissingRequestHeaderException e) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .error("Отсутствует заголовок запроса: " + e.getHeaderName())
-                .build();
-        log.debug("{}: {}", e.getClass().getSimpleName(), e.getMessage());
-
-        return errorResponse;
-    }
-
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ValidateException.class)
     public ErrorResponse handleValidationExceptions(ValidateException ex) {
