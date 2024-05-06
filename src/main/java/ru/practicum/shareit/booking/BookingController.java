@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -45,16 +46,21 @@ public class BookingController {
     @GetMapping
     public List<BookingDto> getUserBookings(
             @RequestHeader(REQUEST_HEADER_USER_ID) Long userId,
-            @RequestParam(defaultValue = "ALL") RequestBookingStatus state
+            @RequestParam(defaultValue = "ALL") RequestBookingStatus state,
+            @RequestParam(required = false, defaultValue = "0") final Integer from,
+            @RequestParam(required = false, defaultValue = "10") final Integer size
     ) {
-        return bookingService.getBookingsByUser(userId, state);
+        int page = from > 0 ? from / size : from;
+        return bookingService.getBookingsByUser(userId, state, PageRequest.of(page, size));
     }
 
     @GetMapping("/owner")
     public List<BookingDto> getUserItemBookings(
             @RequestHeader(REQUEST_HEADER_USER_ID) Long userId,
-            @RequestParam(defaultValue = "ALL") RequestBookingStatus state
+            @RequestParam(defaultValue = "ALL") RequestBookingStatus state,
+            @RequestParam(required = false, defaultValue = "0") final Integer from,
+            @RequestParam(required = false, defaultValue = "10") final Integer size
     ) {
-        return bookingService.getBookingStatusByOwner(userId, state);
+        return bookingService.getBookingStatusByOwner(userId, state, PageRequest.of(from, size));
     }
 }
