@@ -11,12 +11,11 @@ import ru.practicum.shareit.item.dto.ItemFullDto;
 import javax.validation.Valid;
 import java.util.List;
 
-import static ru.practicum.shareit.constants.ItemConstants.USER_ID;
-
 @RestController
 @RequestMapping("/items")
 @RequiredArgsConstructor
 public class ItemController {
+    public static final String USER_ID = "X-Sharer-User-Id";
     private final ItemService itemService;
 
     @PostMapping

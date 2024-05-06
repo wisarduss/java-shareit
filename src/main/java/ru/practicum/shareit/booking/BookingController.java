@@ -18,17 +18,17 @@ import java.util.List;
 @Validated
 public class BookingController {
     private final BookingService bookingService;
-    private static final String REQUEST_HEADER_USER_ID = "X-Sharer-User-Id";
+    public static final String USER_ID = "X-Sharer-User-Id";
 
     @PostMapping
-    public BookingDto create(@RequestHeader(REQUEST_HEADER_USER_ID) Long userId,
+    public BookingDto create(@RequestHeader(USER_ID) Long userId,
                              @Valid @RequestBody BookingUpdateDto body) {
         return bookingService.create(userId, body);
     }
 
     @PatchMapping("/{bookingId}")
     public BookingDto update(
-            @RequestHeader(REQUEST_HEADER_USER_ID) Long ownerId,
+            @RequestHeader(USER_ID) Long ownerId,
             @PathVariable Long bookingId,
             @RequestParam Boolean approved
     ) {
@@ -37,7 +37,7 @@ public class BookingController {
 
     @GetMapping("/{bookingId}")
     public BookingDto getById(
-            @RequestHeader(REQUEST_HEADER_USER_ID) Long userId,
+            @RequestHeader(USER_ID) Long userId,
             @PathVariable Long bookingId
     ) {
         return bookingService.getBooking(userId, bookingId);
@@ -45,7 +45,7 @@ public class BookingController {
 
     @GetMapping
     public List<BookingDto> getUserBookings(
-            @RequestHeader(REQUEST_HEADER_USER_ID) Long userId,
+            @RequestHeader(USER_ID) Long userId,
             @RequestParam(defaultValue = "ALL") RequestBookingStatus state,
             @RequestParam(required = false, defaultValue = "0") final Integer from,
             @RequestParam(required = false, defaultValue = "10") final Integer size
@@ -56,7 +56,7 @@ public class BookingController {
 
     @GetMapping("/owner")
     public List<BookingDto> getUserItemBookings(
-            @RequestHeader(REQUEST_HEADER_USER_ID) Long userId,
+            @RequestHeader(USER_ID) Long userId,
             @RequestParam(defaultValue = "ALL") RequestBookingStatus state,
             @RequestParam(required = false, defaultValue = "0") final Integer from,
             @RequestParam(required = false, defaultValue = "10") final Integer size
