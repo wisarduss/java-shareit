@@ -1,8 +1,10 @@
 package ru.practicum.shareit.request.service;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
+@Transactional(readOnly = true)
 public class ItemRequestServiceImpl implements ItemRequestService {
 
     private final ItemRequestRepository itemRequestRepository;
@@ -24,6 +28,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public ItemRequestDto create(Long userId, RequestDto requestDTO) {
+        log.debug("Получен запрос на создание itemRequest");
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
 
@@ -33,6 +38,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestDto> getSelfRequests(Long userId) {
+        log.debug("Получен запрос получение самого же itemRequest");
         userRepository.findById(userId)
                 .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
         var result = itemRequestRepository.findAllByRequesterId(userId);
@@ -43,6 +49,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestDto> getAll(Long userId, Pageable pageable) {
+        log.debug("Получен запрос получение всех itemRequest");
         List<ItemRequest> itemRequests = itemRequestRepository.findAllWithoutRequesterId(userId,
                 pageable);
         return itemRequests.stream()
@@ -52,6 +59,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public ItemRequestDto get(Long userId, Long id) {
+        log.debug("Получен запрос получение itemRequest пользователя");
         userRepository.findById(userId)
                 .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
         ItemRequest request = itemRequestRepository.findById(id)
