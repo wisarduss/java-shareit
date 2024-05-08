@@ -7,6 +7,7 @@ import ru.practicum.shareit.item.dto.ItemBookingDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemFullDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
@@ -20,10 +21,11 @@ public class ItemMapper {
                 .name(item.getName())
                 .description(item.getDescription())
                 .available(item.getAvailable())
+                .requestId(item.getRequest() != null ? item.getRequest().getId() : null)
                 .build();
     }
 
-    public static ItemFullDto itemToItemFullDTO(Item item, List<CommentDto> comments, Booking lastBooking,
+    public static ItemFullDto itemToItemFullDto(Item item, List<CommentDto> comments, Booking lastBooking,
                                                 Booking nextBooking) {
         return ItemFullDto.builder()
                 .id(item.getId())
@@ -49,6 +51,17 @@ public class ItemMapper {
                 .description(dto.getDescription())
                 .available(dto.getAvailable())
                 .owner(owner)
+                .build();
+    }
+
+    public static Item itemDtoToItemWithRequest(ItemDto dto, User owner, ItemRequest request) {
+        return Item.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .available(dto.getAvailable())
+                .owner(owner)
+                .request(request)
                 .build();
     }
 }

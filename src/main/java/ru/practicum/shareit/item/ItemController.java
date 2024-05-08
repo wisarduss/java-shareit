@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.CommentUpdateDto;
@@ -10,12 +11,11 @@ import ru.practicum.shareit.item.dto.ItemFullDto;
 import javax.validation.Valid;
 import java.util.List;
 
-import static ru.practicum.shareit.constants.ItemConstants.USER_ID;
-
 @RestController
 @RequestMapping("/items")
 @RequiredArgsConstructor
 public class ItemController {
+    public static final String USER_ID = "X-Sharer-User-Id";
     private final ItemService itemService;
 
     @PostMapping
@@ -36,13 +36,17 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemFullDto> findAllItemsByOwnerId(@RequestHeader(USER_ID) Long userId) {
-        return itemService.findAllItemsByOwnerId(userId);
+    public List<ItemFullDto> findAllItemsByOwnerId(@RequestHeader(USER_ID) Long userId,
+                                                   @RequestParam(required = false, defaultValue = "0") final Integer from,
+                                                   @RequestParam(required = false, defaultValue = "10") final Integer size) {
+        return itemService.findAllItemsByOwnerId(userId, PageRequest.of(from, size));
     }
 
     @GetMapping("/search")
-    public List<ItemDto> searchItem(@RequestParam String text) {
-        return itemService.searchItem(text);
+    public List<ItemDto> searchItem(@RequestParam String text,
+                                    @RequestParam(required = false, defaultValue = "0") final Integer from,
+                                    @RequestParam(required = false, defaultValue = "10") final Integer size) {
+        return itemService.searchItem(text, PageRequest.of(from, size));
     }
 
     @PostMapping("/{itemId}/comment")

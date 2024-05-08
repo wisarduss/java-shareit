@@ -3,7 +3,6 @@ package ru.practicum.shareit.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,13 +12,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
-
-    @ExceptionHandler({IdNotFoundException.class, NotOwnerException.class})
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleObjectDoesNotExistException(final RuntimeException e) {
-        log.debug("Получен статус 404 not found {}", e.getMessage());
-        return new ErrorResponse(e.getMessage());
-    }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -40,21 +32,17 @@ public class ErrorHandler {
         return errorResponse;
     }
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleMissingRequestHeaderException(final MissingRequestHeaderException e) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .error("Отсутствует заголовок запроса: " + e.getHeaderName())
-                .build();
-        log.debug("{}: {}", e.getClass().getSimpleName(), e.getMessage());
-
-        return errorResponse;
-    }
-
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ValidateException.class)
     public ErrorResponse handleValidationExceptions(ValidateException ex) {
         log.debug("Получен статус 400 bad request {}", ex.getMessage());
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(IdNotFoundException.class)
+    public ErrorResponse handleValidationExceptions(IdNotFoundException ex) {
+        log.debug("Получен статус 404 not found {}", ex.getMessage());
         return new ErrorResponse(ex.getMessage());
     }
 
