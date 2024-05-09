@@ -9,7 +9,7 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.exception.ValidateException;
-import ru.practicum.shareit.item.ItemService;
+import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.CommentUpdateDto;
 import ru.practicum.shareit.item.dto.ItemDto;

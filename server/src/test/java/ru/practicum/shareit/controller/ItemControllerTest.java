@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ru.practicum.shareit.exception.ErrorHandler;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.item.ItemController;
-import ru.practicum.shareit.item.ItemService;
+import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemFullDto;
 
