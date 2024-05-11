@@ -29,8 +29,10 @@ public class BookingClient extends BaseClient {
         );
     }
 
-    public ResponseEntity<Object> getBookings(long userId, BookingState state, Integer from,
+    public ResponseEntity<Object> getBookings(long userId, String stateParam, Integer from,
                                               Integer size) {
+        BookingState state = BookingState.from(stateParam)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown state: " + stateParam));
         Map<String, Object> parameters = Map.of(
                 "state", state.name(),
                 "from", from,

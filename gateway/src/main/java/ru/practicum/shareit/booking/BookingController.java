@@ -27,9 +27,7 @@ public class BookingController {
                                               @PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
                                               @Positive @RequestParam(name = "size", defaultValue = "10") Integer size
     ) {
-        BookingState state = BookingState.from(stateParam)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown state: " + stateParam));
-        return bookingClient.getBookings(userId, state, from, size);
+        return bookingClient.getBookings(userId, stateParam, from, size);
     }
 
     @GetMapping("/owner")

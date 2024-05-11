@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
@@ -126,6 +127,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public CommentDto makeComment(Long userId, Long itemId, CommentUpdateDto text) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
