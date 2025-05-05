@@ -2,6 +2,7 @@ package ru.practicum.shareit.authentication.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,10 +21,12 @@ import ru.practicum.shareit.utils.JWTUtil;
 import ru.practicum.shareit.utils.UserValidator;
 
 import javax.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping
+@RequestMapping(path = "/auth")
 @Slf4j
 public class AuthController {
 

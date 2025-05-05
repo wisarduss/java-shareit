@@ -59,24 +59,24 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public UserDto updateUser(Long userId, UserDto userDto) {
+    public UserDto updateUser(UserDto userDto) {
         log.debug("Пользователь обновлен");
-        User result = userRepository.findById(userId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
 
-        if (userDto.getEmail() != null && userDto.getEmail().equals(result.getEmail())) {
-            return getUserById(userId);
+        User user = getAuthenticatedUser();
+
+        if (userDto.getEmail() != null && userDto.getEmail().equals(user.getEmail())) {
+            return getUserById(user.getId());
         }
-        userDto.setId(userId);
+        userDto.setId(user.getId());
 
         if (userDto.getName() != null) {
-            result.setName(userDto.getName());
+            user.setName(userDto.getName());
         }
         if (userDto.getEmail() != null) {
-            result.setEmail(userDto.getEmail());
+            user.setEmail(userDto.getEmail());
         }
 
-        return UserMapper.userToUserDto(userRepository.save(result));
+        return UserMapper.userToUserDto(userRepository.save(user));
     }
 
     @Override

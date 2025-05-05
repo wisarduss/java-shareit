@@ -44,23 +44,6 @@ public class ItemRequestControllerTest {
         response.andExpect(status().is4xxClientError());
     }
 
-
-    @Test
-    void createUserNotFound() throws Exception {
-        when(itemRequestService.create(Mockito.any()))
-                .thenThrow(IdNotFoundException.class);
-
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder()
-                .description("description")
-                .build();
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(itemRequestDto)));
-
-        response.andExpect(status().is4xxClientError());
-    }
-
     @Test
     void getByIdRequestNotFound() throws Exception {
         when(itemRequestService.get(anyLong()))

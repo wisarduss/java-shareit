@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
-    private final UserRepository userRepository;
     private final ItemRepository itemRepository;
     private final EntityManager entityManager;
     private final UserService userService;

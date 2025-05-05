@@ -132,7 +132,7 @@ public class UserControllerTest {
     @Test
     @WithMockUser
     void updateNotFoundUser() throws Exception {
-        when(userService.updateUser(Mockito.anyLong(), Mockito.any()))
+        when(userService.updateUser( Mockito.any()))
                 .thenThrow(IdNotFoundException.class);
 
         UserDto userDto = UserDto.builder()
