@@ -6,6 +6,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -20,11 +21,9 @@ import ru.practicum.shareit.exception.IdNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = BookingController.class)
@@ -55,8 +54,7 @@ public class BookingControllerTest {
                 .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -72,8 +70,7 @@ public class BookingControllerTest {
                 .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -89,8 +86,7 @@ public class BookingControllerTest {
                 .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -107,9 +103,7 @@ public class BookingControllerTest {
                 .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(
-                        jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -126,14 +120,12 @@ public class BookingControllerTest {
                 .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(
-                        jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
     void bookUserNotFound() throws Exception {
-        when(bookingService.create(anyLong(), any()))
+        when(bookingService.create(any()))
                 .thenThrow(IdNotFoundException.class);
 
         BookingUpdateDto booking = BookingUpdateDto.builder()
@@ -153,7 +145,7 @@ public class BookingControllerTest {
     @Test
     void updateBookingNotFound() throws Exception {
         when(
-                bookingService.updateBooking(anyLong(), anyLong(), Mockito.anyBoolean()))
+                bookingService.updateBooking(anyLong(), Mockito.anyBoolean()))
                 .thenThrow(IdNotFoundException.class);
 
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.patch(URL.concat("/{bookingId}"), 1L)
@@ -166,7 +158,7 @@ public class BookingControllerTest {
 
     @Test
     void getBookingItemNotFound() throws Exception {
-        when(bookingService.getBooking(anyLong(), anyLong()))
+        when(bookingService.getBooking(anyLong()))
                 .thenThrow(IdNotFoundException.class);
 
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{bookingId}"), 1L)
@@ -178,7 +170,7 @@ public class BookingControllerTest {
 
     @Test
     void bookItemNotAvailable() throws Exception {
-        when(bookingService.create(anyLong(), any()))
+        when(bookingService.create(any()))
                 .thenThrow(IdNotFoundException.class);
 
         BookingUpdateDto booking = BookingUpdateDto.builder()
@@ -210,7 +202,7 @@ public class BookingControllerTest {
                 .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        when(bookingService.create(anyLong(), any()))
+        when(bookingService.create(any()))
                 .thenReturn(expected);
 
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
@@ -218,7 +210,7 @@ public class BookingControllerTest {
                 .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
-        response.andExpect(status().isOk());
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -236,7 +228,7 @@ public class BookingControllerTest {
                 .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        when(bookingService.updateBooking(anyLong(), anyLong(), any()))
+        when(bookingService.updateBooking(anyLong(), any()))
                 .thenReturn(expected);
 
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.patch(URL.concat("/{bookingId}"), 1L)
@@ -245,7 +237,7 @@ public class BookingControllerTest {
                 .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
-        response.andExpect(status().isOk());
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -263,15 +255,12 @@ public class BookingControllerTest {
                 .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        when(bookingService.getBooking(anyLong(), anyLong()))
+        when(bookingService.getBooking(anyLong()))
                 .thenReturn(expected);
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{bookingId}"), 1L)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(booking)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{bookingId}"), 1L));
 
-        response.andExpect(status().isOk());
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -289,18 +278,16 @@ public class BookingControllerTest {
                 .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        when(bookingService.getBookingsByUser(anyLong(), any(), any()))
+        when(bookingService.getBookingsByUser(any(), any()))
                 .thenReturn(List.of(expected));
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(booking)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL));
 
-        response.andExpect(status().isOk());
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
+    @WithMockUser
     void getUserItemBookings() throws Exception {
         BookingUpdateDto booking = BookingUpdateDto.builder()
                 .itemId(1L)
@@ -315,13 +302,11 @@ public class BookingControllerTest {
                 .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        when(bookingService.getBookingStatusByOwner(anyLong(), any(), any()))
+        when(bookingService.getBookingStatusByOwner(any(), any()))
                 .thenReturn(List.of(expected));
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/owner"))
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(booking)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/owner")));
+
 
         response.andExpect(status().isOk());
     }

@@ -2,24 +2,52 @@ package ru.practicum.shareit.user.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exception.AlreadyExistException;
+import ru.practicum.shareit.authentication.security.PersonDetails;
 import ru.practicum.shareit.exception.IdNotFoundException;
+import ru.practicum.shareit.exception.NotOwnerException;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.userDto.UserDto;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
+
+    @Override
+    public User getAuthenticatedUser() {
+        PersonDetails principal = (PersonDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<User> user = userRepository.findByEmail(principal.getUsername());
+        if (!user.isPresent()) {
+            throw new NotOwnerException("не пользователь");
+        }
+
+        return user.get();
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
+        Optional<User> user = userRepository.findByEmail(s);
+
+        if (!user.isPresent()) {
+            throw new UsernameNotFoundException("Пользователь с email = " + s + " не найден");
+        }
+
+        return new PersonDetails(user.get());
+    }
 
     @Override
     public List<UserDto> getAllUsers() {
@@ -27,19 +55,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll().stream()
                 .map(UserMapper::userToUserDto)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
-    public UserDto createUser(UserDto userDto) {
-        log.debug("Пользователь создан");
-        User user;
-        try {
-            user = userRepository.save(UserMapper.userDtoToUser(userDto));
-        } catch (Exception e) {
-            throw new AlreadyExistException();
-        }
-        return UserMapper.userToUserDto(user);
     }
 
     @Override

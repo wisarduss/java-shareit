@@ -19,6 +19,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
@@ -34,19 +35,19 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
     private final EntityManager entityManager;
+    private final UserService userService;
 
     @Override
     @Transactional
-    public BookingDto create(Long bookerId, BookingUpdateDto bookingParam) {
+    public BookingDto create(BookingUpdateDto bookingParam) {
         validateDate(bookingParam);
-        User user = userRepository.findById(bookerId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + bookerId + " не найден"));
+        User user = userService.getAuthenticatedUser();
 
         Item item = itemRepository.findById(bookingParam.getItemId())
-                .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + bookerId + " не найдена"));
+                .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + bookingParam.getItemId() + " не найдена"));
 
-        if (bookerId.equals(item.getOwner().getId())) {
-            throw new IdNotFoundException("Пользователь с id = " + bookerId + " не найден");
+        if (user.getId().equals(item.getOwner().getId())) {
+            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не найден");
         }
         if (!itemRepository.isItemAvailable(bookingParam.getItemId())) {
             throw new ItemNotAvailableException(bookingParam.getItemId().toString());
@@ -62,9 +63,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingDto updateBooking(Long ownerId, Long bookingId, Boolean isApproved) {
-        User user = userRepository.findById(ownerId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + ownerId + " не найден"));
+    public BookingDto updateBooking(Long bookingId, Boolean isApproved) {
+        User user = userService.getAuthenticatedUser();
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IdNotFoundException("Бронирования с id = " + bookingId + " не найдено"));
@@ -75,8 +75,8 @@ public class BookingServiceImpl implements BookingService {
         Item item = itemRepository.findById(booking.getItem().getId())
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + booking.getItem().getId() + " не найдена"));
 
-        if (!ownerId.equals(item.getOwner().getId())) {
-            throw new IdNotFoundException("Пользователь с id = " + ownerId + " не найден");
+        if (!user.getId().equals(item.getOwner().getId())) {
+            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не найден");
         }
         if (isApproved) {
             itemRepository.updateItemAvailableById(item.getId(), isApproved);
@@ -92,9 +92,8 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public BookingDto getBooking(Long userId, Long bookingId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
+    public BookingDto getBooking(Long bookingId) {
+        User user = userService.getAuthenticatedUser();
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IdNotFoundException("Бронирования с id = " + bookingId + " не найдено"));
@@ -102,34 +101,32 @@ public class BookingServiceImpl implements BookingService {
         Item item = itemRepository.findById(booking.getItem().getId())
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + booking.getItem().getId() + " не найдена"));
 
-        if (!userId.equals(item.getOwner().getId())
-                && !userId.equals(booking.getBooker().getId())) {
-            throw new IdNotFoundException("Пользователь с id = " + userId + " не найден");
+        if (!user.getId().equals(item.getOwner().getId())
+                && !user.getId().equals(booking.getBooker().getId())) {
+            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не найден");
         }
         return BookingMapper.bookingToBookingDTO(booking);
     }
 
     @Override
-    public List<BookingDto> getBookingsByUser(Long bookerId, RequestBookingStatus state, Pageable pageable) {
-        User user = userRepository.findById(bookerId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + bookerId + " не найден"));
+    public List<BookingDto> getBookingsByUser(RequestBookingStatus state, Pageable pageable) {
+        User user = userService.getAuthenticatedUser();
 
-        List<Booking> result = findBookingsByUserIdAndStatus(bookerId, state, pageable);
+        List<Booking> result = findBookingsByUserIdAndStatus(user.getId(), state, pageable);
         return result.stream()
                 .map(BookingMapper::bookingToBookingDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<BookingDto> getBookingStatusByOwner(Long ownerId, RequestBookingStatus state, Pageable pageable) {
-        User user = userRepository.findById(ownerId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + ownerId + " не найден"));
+    public List<BookingDto> getBookingStatusByOwner(RequestBookingStatus state, Pageable pageable) {
+        User user = userService.getAuthenticatedUser();
 
-        List<Item> items = itemRepository.findItemsByOwnerId(ownerId);
+        List<Item> items = itemRepository.findItemsByOwnerId(user.getId());
         if (items.isEmpty()) {
-            throw new IdNotFoundException("Вещь с id пользователя = " + ownerId + " не найдена");
+            throw new IdNotFoundException("Вещь с id пользователя = " + user.getId() + " не найдена");
         }
-        return findBookingsByOwnerIdAndStatus(ownerId, state, pageable).stream()
+        return findBookingsByOwnerIdAndStatus(user.getId(), state, pageable).stream()
                 .map(BookingMapper::bookingToBookingDTO)
                 .collect(Collectors.toList());
     }

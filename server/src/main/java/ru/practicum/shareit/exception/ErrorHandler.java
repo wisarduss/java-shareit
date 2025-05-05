@@ -61,5 +61,19 @@ public class ErrorHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(BadRegistrationException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleObjectDoesNotExistException(final BadRegistrationException e) {
+        log.debug("Получен статус 403 forbidden  {}", e.getMessage());
+        return new ErrorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler(NotOwnerException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleObjectDoesNotExistException(final NotOwnerException e) {
+        log.debug("Получен статус 400 bad request {}", e.getMessage());
+        return new ErrorResponse(e.getMessage());
+    }
+
 }
 

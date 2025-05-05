@@ -15,34 +15,30 @@ import java.util.List;
 @RequestMapping(path = "/requests")
 @AllArgsConstructor
 public class ItemRequestController {
-    public static final String USER_ID = "X-Sharer-User-Id";
     private final ItemRequestService itemRequestService;
 
     @PostMapping
     public ItemRequestDto create(
-            @RequestHeader(USER_ID) Long userId,
             @Valid @RequestBody final RequestDto requestDTO) {
-        return itemRequestService.create(userId, requestDTO);
+        return itemRequestService.create(requestDTO);
     }
 
     @GetMapping
-    public List<ItemRequestDto> getSelfRequests(@RequestHeader(USER_ID) Long userId) {
-        return itemRequestService.getSelfRequests(userId);
+    public List<ItemRequestDto> getSelfRequests()    {
+        return itemRequestService.getSelfRequests();
     }
 
     @GetMapping("/all")
     public List<ItemRequestDto> getAllRequests(
-            @RequestHeader(USER_ID) Long userId,
             @RequestParam(required = false, defaultValue = "0") final Integer from,
             @RequestParam(required = false, defaultValue = "10") final Integer size
     ) {
-        return itemRequestService.getAll(userId, PageRequest.of(from, size, Sort.by("created").descending()));
+        return itemRequestService.getAll(PageRequest.of(from, size, Sort.by("created").descending()));
     }
 
     @GetMapping("/{requestId}")
     public ItemRequestDto getRequest(
-            @RequestHeader(USER_ID) Long userId,
             @PathVariable("requestId") final Long requestId) {
-        return itemRequestService.get(userId, requestId);
+        return itemRequestService.get(requestId);
     }
 }

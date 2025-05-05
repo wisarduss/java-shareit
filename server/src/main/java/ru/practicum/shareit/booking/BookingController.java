@@ -18,49 +18,43 @@ import java.util.List;
 @Validated
 public class BookingController {
     private final BookingService bookingService;
-    public static final String USER_ID = "X-Sharer-User-Id";
 
     @PostMapping
-    public BookingDto create(@RequestHeader(USER_ID) Long userId,
-                             @Valid @RequestBody BookingUpdateDto body) {
-        return bookingService.create(userId, body);
+    public BookingDto create(@Valid @RequestBody BookingUpdateDto body) {
+        return bookingService.create(body);
     }
 
     @PatchMapping("/{bookingId}")
     public BookingDto update(
-            @RequestHeader(USER_ID) Long ownerId,
             @PathVariable Long bookingId,
             @RequestParam Boolean approved
     ) {
-        return bookingService.updateBooking(ownerId, bookingId, approved);
+        return bookingService.updateBooking(bookingId, approved);
     }
 
     @GetMapping("/{bookingId}")
     public BookingDto getById(
-            @RequestHeader(USER_ID) Long userId,
             @PathVariable Long bookingId
     ) {
-        return bookingService.getBooking(userId, bookingId);
+        return bookingService.getBooking(bookingId);
     }
 
     @GetMapping
     public List<BookingDto> getUserBookings(
-            @RequestHeader(USER_ID) Long userId,
             @RequestParam(defaultValue = "ALL") RequestBookingStatus state,
             @RequestParam(required = false, defaultValue = "0") final Integer from,
             @RequestParam(required = false, defaultValue = "10") final Integer size
     ) {
         int page = from > 0 ? from / size : from;
-        return bookingService.getBookingsByUser(userId, state, PageRequest.of(page, size));
+        return bookingService.getBookingsByUser(state, PageRequest.of(page, size));
     }
 
     @GetMapping("/owner")
     public List<BookingDto> getUserItemBookings(
-            @RequestHeader(USER_ID) Long userId,
             @RequestParam(defaultValue = "ALL") RequestBookingStatus state,
             @RequestParam(required = false, defaultValue = "0") final Integer from,
             @RequestParam(required = false, defaultValue = "10") final Integer size
     ) {
-        return bookingService.getBookingStatusByOwner(userId, state, PageRequest.of(from, size));
+        return bookingService.getBookingStatusByOwner(state, PageRequest.of(from, size));
     }
 }

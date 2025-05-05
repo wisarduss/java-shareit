@@ -1,4 +1,4 @@
-package ru.practicum.shareit.user.userDto;
+package ru.practicum.shareit.authentication.dto;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,13 +9,12 @@ import javax.validation.constraints.NotBlank;
 
 @Data
 @Builder(toBuilder = true)
-public class UserDto {
-    private Long id;
-    @NotBlank
-    private String name;
+public class AuthenticationDto {
+
     @NotBlank
     @Email
     private String email;
+
     @NotBlank
     @Length(min = 8, max = 16)
     private String password;

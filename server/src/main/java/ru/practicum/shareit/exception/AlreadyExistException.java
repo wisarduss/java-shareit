@@ -6,4 +6,11 @@ public class AlreadyExistException extends RuntimeException {
         super();
     }
 
+    public AlreadyExistException(String message) {
+        super(message);
+    }
+
+    public AlreadyExistException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

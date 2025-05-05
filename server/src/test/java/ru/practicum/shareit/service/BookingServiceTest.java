@@ -1,27 +1,30 @@
 package ru.practicum.shareit.service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.test.context.support.WithMockUser;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingUpdateDto;
 import ru.practicum.shareit.booking.dto.RequestBookingStatus;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
-import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.booking.service.BookingServiceImpl;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.exception.ItemNotAvailableException;
 import ru.practicum.shareit.exception.ValidateException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,1219 +33,250 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class BookingServiceTest {
 
-    @Autowired
-    private BookingService bookingService;
-
-    @MockBean
+    @Mock
     private BookingRepository bookingRepository;
 
-    @MockBean
-    private UserRepository userRepository;
-
-    @MockBean
-    private ItemRepository itemRepository;
-
-    @MockBean
+    @Mock
     private EntityManager entityManager;
 
+    @Mock
+    private ItemRepository itemRepository;
+
+    @InjectMocks
+    private BookingServiceImpl bookingService;
+
+    @Mock
+    private UserService userService;
+
+    private final User testUser = User.builder()
+            .id(1L)
+            .name("name")
+            .email("test@test.ru")
+            .build();
+
+    private final Item testItem = Item.builder()
+            .id(1L)
+            .name("test")
+            .description("test")
+            .owner(testUser)
+            .available(true)
+            .build();
+
+    private final Booking testBooking = Booking.builder()
+            .id(1L)
+            .start(LocalDateTime.now().plusDays(1))
+            .end(LocalDateTime.now().plusDays(2))
+            .item(testItem)
+            .booker(testUser)
+            .status(BookingStatus.WAITING.name())
+            .build();
+
     @Test
-    void bookingValidateEqualsDate() {
-        LocalDateTime date = LocalDateTime.now();
-        BookingUpdateDto bookingDto = BookingUpdateDto.builder()
+    void create_shouldThrowExceptionWhenDatesEqual() {
+        BookingUpdateDto dto = BookingUpdateDto.builder()
                 .itemId(1L)
-                .start(date)
-                .end(date)
+                .start(LocalDateTime.now())
+                .end(LocalDateTime.now())
                 .build();
 
-        assertThrows(ValidateException.class, () -> bookingService.create(1L, bookingDto));
+
+        assertThrows(ValidateException.class, () -> bookingService.create(dto));
     }
 
     @Test
-    void bookingValidateDate() {
-        BookingUpdateDto bookingDTO = BookingUpdateDto.builder()
+    void create_shouldThrowExceptionWhenStartAfterEnd() {
+        BookingUpdateDto dto = BookingUpdateDto.builder()
                 .itemId(1L)
                 .start(LocalDateTime.now().plusDays(1))
                 .end(LocalDateTime.now())
                 .build();
 
-        assertThrows(ValidateException.class, () -> bookingService.create(1L, bookingDTO));
+        assertThrows(ValidateException.class, () -> bookingService.create(dto));
     }
 
     @Test
-    void bookingUserNotFound() {
-        BookingUpdateDto bookingRequestDTO = BookingUpdateDto.builder()
+    void create_shouldThrowExceptionWhenUserNotFound() {
+        BookingUpdateDto dto = BookingUpdateDto.builder()
                 .itemId(1L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
+                .start(LocalDateTime.now().plusDays(1))
+                .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
 
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.create(1L, bookingRequestDTO));
-
-        verify(userRepository, times(1)).findById(anyLong());
+        assertThrows(IdNotFoundException.class, () -> bookingService.create(dto));
     }
 
     @Test
-    void bookingItemNotFound() {
-        BookingUpdateDto bookingRequestDTO = BookingUpdateDto.builder()
+    void create_shouldThrowExceptionWhenItemNotFound() {
+        BookingUpdateDto dto = BookingUpdateDto.builder()
                 .itemId(1L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
+                .start(LocalDateTime.now().plusDays(1))
+                .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.create(1L, bookingRequestDTO));
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
+        assertThrows(IdNotFoundException.class, () -> bookingService.create(dto));
+        verify(itemRepository).findById(anyLong());
     }
 
     @Test
-    void bookingSelfItemException() {
-        BookingUpdateDto bookingRequestDTO = BookingUpdateDto.builder()
+    void create_shouldThrowExceptionWhenBookingOwnItem() {
+        BookingUpdateDto dto = BookingUpdateDto.builder()
                 .itemId(1L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
+                .start(LocalDateTime.now().plusDays(1))
+                .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(testItem));
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
+
+        assertThrows(IdNotFoundException.class, () -> bookingService.create(dto));
+    }
+
+    @Test
+    @WithMockUser
+    void create_shouldThrowExceptionWhenItemNotAvailable() {
+        User anotherUser = User.builder().id(2L).build();
+        BookingUpdateDto dto = BookingUpdateDto.builder()
+                .itemId(1L)
+                .start(LocalDateTime.now().plusDays(1))
+                .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        Item item = Item.builder()
+        Item testItemthis = Item.builder()
                 .id(1L)
                 .name("test")
                 .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
+                .owner(anotherUser)
+                .available(true)
                 .build();
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(testItemthis));
+        when(itemRepository.isItemAvailable(anyLong())).thenReturn(false);
 
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.create(1L, bookingRequestDTO));
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
 
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
+        assertThrows(ItemNotAvailableException.class, () -> bookingService.create(dto));
     }
 
     @Test
-    void bookingItemNotAvailableException() {
-        BookingUpdateDto bookingRequestDTO = BookingUpdateDto.builder()
+    void create_shouldCreateBookingSuccessfully() {
+        User anotherUser = User.builder().id(2L).build();
+        BookingUpdateDto dto = BookingUpdateDto.builder()
                 .itemId(1L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
+                .start(LocalDateTime.now().plusDays(1))
+                .end(LocalDateTime.now().plusDays(2))
                 .build();
 
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
+        Item testItem = Item.builder()
                 .id(1L)
                 .name("test")
                 .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
+                .owner(anotherUser)
+                .available(true)
                 .build();
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
-        when(itemRepository.isItemAvailable(anyLong()))
-                .thenReturn(Boolean.FALSE);
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
 
-        assertThrows(ItemNotAvailableException.class, () -> bookingService.create(2L, bookingRequestDTO));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(testItem));
+        when(itemRepository.isItemAvailable(anyLong())).thenReturn(true);
+        when(bookingRepository.save(any())).thenReturn(testBooking);
 
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).isItemAvailable(anyLong());
-    }
+        BookingDto result = bookingService.create(dto);
 
-    @Test
-    void booking() {
-        BookingUpdateDto bookingRequestDTO = BookingUpdateDto.builder()
-                .itemId(1L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .build();
-
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
-        when(itemRepository.isItemAvailable(anyLong()))
-                .thenReturn(Boolean.TRUE);
-        when(bookingRepository.save(any()))
-                .thenReturn(booking);
-
-        BookingDto result = bookingService.create(2L, bookingRequestDTO);
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(2L);
-        assertThat(result.getStatus()).isEqualTo(BookingStatus.WAITING.name());
-        assertThat(result.getStart()).isEqualTo(bookingRequestDTO.getStart());
-        assertThat(result.getEnd()).isEqualTo(bookingRequestDTO.getEnd());
-        assertThat(result.getItem()).isNotNull();
-        assertThat(result.getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).isItemAvailable(anyLong());
-        verify(bookingRepository, times(1)).save(any());
+        assertThat(result.getId()).isEqualTo(testBooking.getId());
+        verify(bookingRepository).save(any());
     }
 
     @Test
-    void updateBookingUserNotFoundException() {
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
+    void updateBooking_shouldThrowExceptionWhenUserNotFound() {
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
 
         assertThrows(IdNotFoundException.class,
-                () -> bookingService.updateBooking(1L, 1L, Boolean.TRUE));
-
-        verify(userRepository, times(1)).findById(anyLong());
+                () -> bookingService.updateBooking(1L, true));
     }
 
     @Test
-    void updateBookingBookingNotFoundException() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
+    void updateBooking_shouldThrowExceptionWhenBookingNotFound() {
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
 
         assertThrows(IdNotFoundException.class,
-                () -> bookingService.updateBooking(1L, 1L, Boolean.TRUE));
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
+                () -> bookingService.updateBooking(1L, true));
     }
 
     @Test
-    void updateBookingStatusException() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
+    void updateBooking_shouldThrowExceptionWhenStatusAlreadyApproved() {
+        Booking approvedBooking = testBooking.toBuilder()
+                .status(BookingStatus.APPROVED.name())
                 .build();
 
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
 
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        booking.setStatus(BookingStatus.APPROVED.name());
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(approvedBooking));
 
         assertThrows(ValidateException.class,
-                () -> bookingService.updateBooking(1L, 1L, Boolean.TRUE));
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
+                () -> bookingService.updateBooking(1L, true));
     }
 
     @Test
-    void updateBookingItemException() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
+    void updateBooking_shouldUpdateStatusToApproved() {
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(testBooking));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(testItem));
 
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
+        BookingDto result = bookingService.updateBooking(1L, true);
 
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.updateBooking(1L, 1L, Boolean.TRUE));
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void updateBookingOwnerException() {
-
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
-
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.updateBooking(2L, 1L, Boolean.TRUE));
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void updateBookingApprove() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
-
-        BookingDto result = bookingService.updateBooking(1L, 1L, Boolean.TRUE);
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(2L);
         assertThat(result.getStatus()).isEqualTo(BookingStatus.WAITING.name());
-        assertThat(result.getStart()).isEqualTo(booking.getStart());
-        assertThat(result.getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.getItem()).isNotNull();
-        assertThat(result.getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(2)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).updateItemAvailableById(anyLong(), anyBoolean());
-        verify(bookingRepository, times(1)).updateBookingStatusById(anyLong(), any());
     }
 
     @Test
-    void updateBookingDismiss() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
+    void getBooking_shouldReturnBooking() {
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(testBooking));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(testItem));
 
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
 
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
-
-        BookingDto result = bookingService.updateBooking(1L, 1L, Boolean.FALSE);
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(2L);
-        assertThat(result.getStatus()).isEqualTo(BookingStatus.WAITING.name());
-        assertThat(result.getStart()).isEqualTo(booking.getStart());
-        assertThat(result.getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.getItem()).isNotNull();
-        assertThat(result.getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(2)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).updateBookingStatusById(anyLong(), any());
-    }
-
-    @Test
-    void getBookingUserException() {
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class, () -> bookingService.getBooking(1L, 1L));
-        verify(userRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void getBookingBookingNotFoundException() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class, () -> bookingService.getBooking(1L, 1L));
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void getBookingItemNotFoundException() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class, () -> bookingService.getBooking(1L, 1L));
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void getBookingUserNotFoundException() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
-
-        assertThrows(IdNotFoundException.class, () -> bookingService.getBooking(2L, 1L));
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void getBooking() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findById(anyLong()))
-                .thenReturn(Optional.of(booking));
-        when(itemRepository.findById(anyLong()))
-                .thenReturn(Optional.of(item));
-
-        BookingDto result = bookingService.getBooking(1L, 1L);
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(booking.getId());
-        assertThat(result.getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.getStart()).isEqualTo(booking.getStart());
-        assertThat(result.getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.getItem()).isNotNull();
-        assertThat(result.getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void getBookingsByUserException() {
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.getBookingsByUser(1L, RequestBookingStatus.ALL, null));
-        verify(userRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void getBookingsByUserAll() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findBookingByBookerIdOrderByStartDesc(anyLong(), any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingsByUser(1L, RequestBookingStatus.ALL, null);
+        BookingDto result = bookingService.getBooking(1L);
 
         assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(testBooking.getId());
+    }
+
+    @Test
+    void getBookingsByUser_shouldReturnBookings() {
+        when(bookingRepository.findBookingByBookerIdOrderByStartDesc(anyLong(), any(Pageable.class)))
+                .thenReturn(List.of(testBooking));
+
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
+
+        Pageable pageable = PageRequest.of(0, 10);
+        List<BookingDto> result = bookingService.getBookingsByUser(RequestBookingStatus.ALL, pageable);
+
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findBookingByBookerIdOrderByStartDesc(anyLong(), any());
+        assertThat(result.get(0).getId()).isEqualTo(testBooking.getId());
     }
 
     @Test
-    void getBookingsByUserWaiting() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
+    @WithMockUser
+    void getBookingStatusByOwner_shouldReturnBookings() {
+        when(itemRepository.findItemsByOwnerId(anyLong())).thenReturn(List.of(testItem));
+        when(bookingRepository.findBookingsByItem_OwnerIdOrderByStartDesc(anyLong(), any(Pageable.class)))
+                .thenReturn(List.of(testBooking));
 
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
 
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
+        when(userService.getAuthenticatedUser()).thenReturn(testUser);
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findBookingByBookerIdAndStatusOrderByStartDesc(anyLong(), any(), any()))
-                .thenReturn(List.of(booking));
+        Pageable pageable = PageRequest.of(0, 10);
+        List<BookingDto> result = bookingService.getBookingStatusByOwner(RequestBookingStatus.ALL, pageable);
 
-        List<BookingDto> result = bookingService.getBookingsByUser(1L, RequestBookingStatus.WAITING, null);
-
-        assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findBookingByBookerIdAndStatusOrderByStartDesc(anyLong(),
-                any(), any());
+        assertThat(result.get(0).getId()).isEqualTo(testBooking.getId());
     }
-
-    @Test
-    void getBookingsByUserRejected() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findBookingByBookerIdAndStatusOrderByStartDesc(anyLong(), any(), any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingsByUser(1L, RequestBookingStatus.REJECTED, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findBookingByBookerIdAndStatusOrderByStartDesc(anyLong(),
-                any(), any());
-    }
-
-    @Test
-    void getBookingsByUserCurrent() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findCurrentBookingByBookerId(anyLong(), any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingsByUser(1L, RequestBookingStatus.CURRENT, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findCurrentBookingByBookerId(anyLong(), any());
-    }
-
-    @Test
-    void getBookingsByUserPast() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findPastBookingByBookerId(anyLong(), any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingsByUser(1L, RequestBookingStatus.PAST, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findPastBookingByBookerId(anyLong(), any());
-    }
-
-    @Test
-    void getBookingsByUserFuture() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(bookingRepository.findFutureBookingByBookerId(anyLong(), any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingsByUser(1L, RequestBookingStatus.FUTURE, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(bookingRepository, times(1)).findFutureBookingByBookerId(anyLong(), any());
-    }
-
-    @Test
-    void getBookingStatusByOwnerException() {
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.ALL, null));
-        verify(userRepository, times(1)).findById(anyLong());
-    }
-
-    @Test
-    void getBookingStatusByOwnerItemException() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findItemsByOwnerId(anyLong()))
-                .thenReturn(Collections.emptyList());
-
-        assertThrows(IdNotFoundException.class,
-                () -> bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.ALL, null));
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findItemsByOwnerId(anyLong());
-    }
-
-
-    @Test
-    void getBookingStatusByOwnerAll() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findItemsByOwnerId(anyLong()))
-                .thenReturn(List.of(item));
-        when(bookingRepository.findBookingsByItem_OwnerIdOrderByStartDesc(anyLong(), any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.ALL, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findItemsByOwnerId(anyLong());
-        verify(bookingRepository, times(1)).findBookingsByItem_OwnerIdOrderByStartDesc(anyLong(),
-                any());
-    }
-
-    @Test
-    void getBookingStatusByOwnerWaiting() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findItemsByOwnerId(anyLong()))
-                .thenReturn(List.of(item));
-        when(bookingRepository.findBookingsByItem_OwnerIdAndStatusOrderByStartDesc(anyLong(), any(),
-                any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.WAITING, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findItemsByOwnerId(anyLong());
-        verify(bookingRepository, times(1)).findBookingsByItem_OwnerIdAndStatusOrderByStartDesc(
-                anyLong(), any(), any());
-    }
-
-    @Test
-    void getBookingStatusByOwnerRejected() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findItemsByOwnerId(anyLong()))
-                .thenReturn(List.of(item));
-        when(bookingRepository.findBookingsByItem_OwnerIdAndStatusOrderByStartDesc(anyLong(), any(),
-                any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.REJECTED, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findItemsByOwnerId(anyLong());
-        verify(bookingRepository, times(1)).findBookingsByItem_OwnerIdAndStatusOrderByStartDesc(
-                anyLong(), any(), any());
-    }
-
-    @Test
-    void getBookingStatusByOwnerCurrent() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findItemsByOwnerId(anyLong()))
-                .thenReturn(List.of(item));
-        when(bookingRepository.findCurrentBookingByOwnerId(anyLong(), any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.CURRENT, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findItemsByOwnerId(anyLong());
-        verify(bookingRepository, times(1)).findCurrentBookingByOwnerId(anyLong(), any());
-    }
-
-    @Test
-    void getBookingStatusByOwnerPast() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findItemsByOwnerId(anyLong()))
-                .thenReturn(List.of(item));
-        when(bookingRepository.findBookingsByItem_OwnerIdAndEndBeforeOrderByStartDesc(anyLong(), any(),
-                any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.PAST, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findItemsByOwnerId(anyLong());
-        verify(bookingRepository, times(1)).findBookingsByItem_OwnerIdAndEndBeforeOrderByStartDesc(
-                anyLong(), any(), any());
-    }
-
-    @Test
-    void getBookingStatusByOwnerFuture() {
-        User user = User.builder()
-                .id(1L)
-                .name("name")
-                .email("test@test.ru")
-                .build();
-
-        Item item = Item.builder()
-                .id(1L)
-                .name("test")
-                .description("test")
-                .owner(user)
-                .available(Boolean.TRUE)
-                .build();
-
-        Booking booking = Booking.builder()
-                .id(2L)
-                .start(LocalDateTime.parse("2030-01-01T00:00:00"))
-                .end(LocalDateTime.parse("2030-02-01T00:00:00"))
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING.name())
-                .build();
-
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
-        when(itemRepository.findItemsByOwnerId(anyLong()))
-                .thenReturn(List.of(item));
-        when(bookingRepository.findBookingsByItem_OwnerIdAndStartAfterOrderByStartDesc(anyLong(), any(),
-                any()))
-                .thenReturn(List.of(booking));
-
-        List<BookingDto> result = bookingService.getBookingStatusByOwner(1L, RequestBookingStatus.FUTURE, null);
-
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(booking.getId());
-        assertThat(result.get(0).getStatus()).isEqualTo(booking.getStatus());
-        assertThat(result.get(0).getStart()).isEqualTo(booking.getStart());
-        assertThat(result.get(0).getEnd()).isEqualTo(booking.getEnd());
-        assertThat(result.get(0).getItem()).isNotNull();
-        assertThat(result.get(0).getBooker()).isNotNull();
-
-        verify(userRepository, times(1)).findById(anyLong());
-        verify(itemRepository, times(1)).findItemsByOwnerId(anyLong());
-        verify(bookingRepository, times(1)).findBookingsByItem_OwnerIdAndStartAfterOrderByStartDesc(
-                anyLong(), any(), any());
-    }
-
 }

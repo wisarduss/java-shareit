@@ -24,6 +24,7 @@ import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -41,13 +42,13 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
     private final BookingRepository bookingRepository;
     private final ItemRequestRepository requestRepository;
+    private final UserService userService;
 
     @Override
     @Transactional
-    public ItemDto createItem(Long userId, ItemDto itemDto) {
+    public ItemDto createItem(ItemDto itemDto) {
         log.debug("Вещь создана");
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
+        User user = userService.getAuthenticatedUser();
 
         if (itemDto.getRequestId() != null) {
             ItemRequest itemRequest = requestRepository.findById(itemDto.getRequestId())
@@ -60,11 +61,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemDto updateItem(Long userId, ItemDto itemDto, Long itemId) {
+    public ItemDto updateItem(ItemDto itemDto, Long itemId) {
         log.debug("Вещь обновлена");
-        Item item = itemRepository.getById(itemId);
-        if (!userId.equals(item.getOwner().getId())) {
-            throw new IdNotFoundException("Пользователь с id = " + userId + " не найден");
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new IdNotFoundException("Товар с id =" + itemId + "не найден"));
+        User user = userService.getAuthenticatedUser();
+        if (!user.getId().equals(item.getOwner().getId())) {
+            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не найден");
         }
         if (itemDto.getName() != null) {
             item.setName(itemDto.getName());
@@ -80,10 +83,12 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemFullDto getByIdItem(Long userId, Long itemId) {
+    public ItemFullDto getByIdItem(Long itemId) {
         log.debug("Вещь с id = {} получена", itemId);
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + itemId + " не найдена"));
+
+        User user = userService.getAuthenticatedUser();
 
         List<Booking> bookingList = bookingRepository.findBookingsByItemId(item.getId());
         Booking lastBooking = null;
@@ -92,7 +97,7 @@ public class ItemServiceImpl implements ItemService {
             lastBooking = getNextBooking(bookingList);
         } else if (bookingList.stream().map(Booking::getBooker)
                 .map(User::getId)
-                .noneMatch(it -> it.equals(userId))
+                .noneMatch(it -> it.equals(user.getId()))
         ) {
             lastBooking = getLastBooking(bookingList);
             nextBooking = getNextBooking(bookingList);
@@ -106,10 +111,12 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemFullDto> findAllItemsByOwnerId(Long userId, Pageable pageable) {
-        List<Item> items = itemRepository.findItemsByOwnerId(userId, pageable);
+    public List<ItemFullDto> findAllItemsByOwnerId(Pageable pageable) {
+        User user = userService.getAuthenticatedUser();
+
+        List<Item> items = itemRepository.findItemsByOwnerId(user.getId(), pageable);
         return items.stream()
-                .map(item -> getByIdItem(userId, item.getId()))
+                .map(item -> getByIdItem(item.getId()))
                 .sorted(Comparator.comparing(ItemFullDto::getId))
                 .collect(Collectors.toList());
     }
@@ -128,14 +135,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public CommentDto makeComment(Long userId, Long itemId, CommentUpdateDto text) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
+    public CommentDto makeComment(Long itemId, CommentUpdateDto text) {
+        User user = userService.getAuthenticatedUser();
 
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + itemId + " не найдена"));
 
-        if (!bookingRepository.existsBookingByBookerIdAndStatus(userId,
+        if (!bookingRepository.existsBookingByBookerIdAndStatus(user.getId(),
                 BookingStatus.APPROVED.name())) {
             throw new ValidateException();
         }

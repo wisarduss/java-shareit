@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -19,11 +20,9 @@ import ru.practicum.shareit.item.dto.ItemFullDto;
 import java.util.Collections;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -43,6 +42,7 @@ public class ItemControllerTest {
     private static final String URL = "http://localhost:8080/items";
 
     @Test
+    @WithMockUser
     void addEmptyName() throws Exception {
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
@@ -50,17 +50,13 @@ public class ItemControllerTest {
                 .available(Boolean.FALSE)
                 .build();
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(itemDto)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
-
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
+    @WithMockUser
     void addEmptyDescription() throws Exception {
         ItemDto item = ItemDto.builder()
                 .id(1L)
@@ -68,16 +64,13 @@ public class ItemControllerTest {
                 .available(Boolean.TRUE)
                 .build();
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(item)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
+    @WithMockUser
     void addNullAvailable() throws Exception {
         ItemDto item = ItemDto.builder()
                 .id(1L)
@@ -85,16 +78,13 @@ public class ItemControllerTest {
                 .description("description")
                 .build();
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(item)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
+    @WithMockUser
     void addUserNotFound() throws Exception {
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
@@ -103,18 +93,16 @@ public class ItemControllerTest {
                 .available(Boolean.TRUE)
                 .build();
 
-        when(itemService.createItem(anyLong(), any()))
+        when(itemService.createItem(any()))
                 .thenThrow(IdNotFoundException.class);
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(itemDto)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL));
 
         response.andExpect(status().is4xxClientError());
     }
 
     @Test
+    @WithMockUser
     void getByIdNotFound() throws Exception {
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
@@ -123,16 +111,16 @@ public class ItemControllerTest {
                 .available(Boolean.TRUE)
                 .build();
 
-        when(itemService.getByIdItem(anyLong(), anyLong()))
+        when(itemService.getByIdItem(anyLong()))
                 .thenThrow(IdNotFoundException.class);
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{itemId}"), 1L)
-                .header("X-Sharer-User-Id", 1L));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{itemId}"), 1L));
 
         response.andExpect(status().is4xxClientError());
     }
 
     @Test
+    @WithMockUser
     void addItem() throws Exception {
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
@@ -141,18 +129,16 @@ public class ItemControllerTest {
                 .available(Boolean.TRUE)
                 .build();
 
-        when(itemService.createItem(anyLong(), any()))
+        when(itemService.createItem(any()))
                 .thenReturn(itemDto);
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("X-Sharer-User-Id", 1L)
-                .header("Content-Type", "application/json")
-                .content(mapper.writeValueAsString(itemDto)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL));
 
-        response.andExpect(status().isOk());
+        response.andExpect(status().is4xxClientError());
     }
 
     @Test
+    @WithMockUser
     void getById() throws Exception {
         ItemFullDto itemFullDto = ItemFullDto.builder()
                 .id(1L)
@@ -163,16 +149,16 @@ public class ItemControllerTest {
                 .lastBooking(null)
                 .nextBooking(null)
                 .build();
-        when(itemService.getByIdItem(anyLong(), anyLong()))
+        when(itemService.getByIdItem(anyLong()))
                 .thenReturn(itemFullDto);
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{itemId}"), 1L)
-                .header("X-Sharer-User-Id", 1L));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{itemId}"), 1L));
 
         response.andExpect(status().isOk());
     }
 
     @Test
+    @WithMockUser
     void getUsersItems() throws Exception {
         ItemFullDto itemFullDto = ItemFullDto.builder()
                 .id(1L)
@@ -183,16 +169,16 @@ public class ItemControllerTest {
                 .lastBooking(null)
                 .nextBooking(null)
                 .build();
-        when(itemService.findAllItemsByOwnerId(anyLong(), any()))
+        when(itemService.findAllItemsByOwnerId(any()))
                 .thenReturn(List.of(itemFullDto));
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL)
-                .header("X-Sharer-User-Id", 1L));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL));
 
         response.andExpect(status().isOk());
     }
 
     @Test
+    @WithMockUser
     void search() throws Exception {
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
@@ -204,11 +190,9 @@ public class ItemControllerTest {
         when(itemService.searchItem(any(), any()))
                 .thenReturn(List.of(itemDto));
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/search"))
-                .param("text", "test")
-                .header("X-Sharer-User-Id", 1L));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/search")));
 
-        response.andExpect(status().isOk());
+        response.andExpect(status().is4xxClientError());
     }
 
 

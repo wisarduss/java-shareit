@@ -16,31 +16,28 @@ import java.util.List;
 @RequestMapping("/items")
 @RequiredArgsConstructor
 public class ItemController {
-    public static final String USER_ID = "X-Sharer-User-Id";
     private final ItemService itemService;
 
     @PostMapping
-    public ItemDto createItem(@RequestHeader(USER_ID) Long userId, @Valid @RequestBody ItemDto itemDto) {
-        return itemService.createItem(userId, itemDto);
+    public ItemDto createItem(@Valid @RequestBody ItemDto itemDto) {
+        return itemService.createItem(itemDto);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemDto patchItem(@RequestHeader(USER_ID) Long userId,
-                             @RequestBody ItemDto itemDto,
+    public ItemDto patchItem(@RequestBody ItemDto itemDto,
                              @PathVariable Long itemId) {
-        return itemService.updateItem(userId, itemDto, itemId);
+        return itemService.updateItem(itemDto, itemId);
     }
 
     @GetMapping("/{itemId}")
-    public ItemFullDto getByIdItem(@RequestHeader(USER_ID) Long userId, @PathVariable Long itemId) {
-        return itemService.getByIdItem(userId, itemId);
+    public ItemFullDto getByIdItem(@PathVariable Long itemId) {
+        return itemService.getByIdItem(itemId);
     }
 
     @GetMapping
-    public List<ItemFullDto> findAllItemsByOwnerId(@RequestHeader(USER_ID) Long userId,
-                                                   @RequestParam(required = false, defaultValue = "0") final Integer from,
+    public List<ItemFullDto> findAllItemsByOwnerId(@RequestParam(required = false, defaultValue = "0") final Integer from,
                                                    @RequestParam(required = false, defaultValue = "10") final Integer size) {
-        return itemService.findAllItemsByOwnerId(userId, PageRequest.of(from, size));
+        return itemService.findAllItemsByOwnerId(PageRequest.of(from, size));
     }
 
     @GetMapping("/search")
@@ -52,9 +49,8 @@ public class ItemController {
 
     @PostMapping("/{itemId}/comment")
     public CommentDto comment(
-            @RequestHeader(USER_ID) long userId,
             @PathVariable Long itemId,
             @RequestBody @Valid CommentUpdateDto text) {
-        return itemService.makeComment(userId, itemId, text);
+        return itemService.makeComment(itemId, text);
     }
 }

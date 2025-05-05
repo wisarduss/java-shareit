@@ -13,6 +13,7 @@ import ru.practicum.shareit.request.mapper.ItemRequestMapper;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,33 +26,34 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     private final ItemRequestRepository itemRequestRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
 
     @Override
     @Transactional
-    public ItemRequestDto create(Long userId, RequestDto requestDTO) {
+    public ItemRequestDto create(RequestDto requestDTO) {
         log.debug("Получен запрос на создание itemRequest");
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
+        User user = userService.getAuthenticatedUser();
 
         var result = itemRequestRepository.save(ItemRequestMapper.itemRequestDtoToItemRequest(user, requestDTO));
         return ItemRequestMapper.itemRequestToItemRequestDTO(result);
     }
 
     @Override
-    public List<ItemRequestDto> getSelfRequests(Long userId) {
+    public List<ItemRequestDto> getSelfRequests() {
         log.debug("Получен запрос получение самого же itemRequest");
-        userRepository.findById(userId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
-        var result = itemRequestRepository.findAllByRequesterId(userId);
+        User user = userService.getAuthenticatedUser();
+
+        var result = itemRequestRepository.findAllByRequesterId(user.getId());
         return result.stream()
                 .map(ItemRequestMapper::itemRequestToItemRequestDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ItemRequestDto> getAll(Long userId, Pageable pageable) {
+    public List<ItemRequestDto> getAll(Pageable pageable) {
         log.debug("Получен запрос получение всех itemRequest");
-        List<ItemRequest> itemRequests = itemRequestRepository.findAllWithoutRequesterId(userId,
+        User user = userService.getAuthenticatedUser();
+        List<ItemRequest> itemRequests = itemRequestRepository.findAllWithoutRequesterId(user.getId(),
                 pageable);
         return itemRequests.stream()
                 .map(ItemRequestMapper::itemRequestToItemRequestDTO)
@@ -59,10 +61,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
-    public ItemRequestDto get(Long userId, Long id) {
+    public ItemRequestDto get(Long id) {
         log.debug("Получен запрос получение itemRequest пользователя");
-        userRepository.findById(userId)
-                .orElseThrow(() -> new IdNotFoundException("Пользователь с id = " + userId + " не найден"));
+
         ItemRequest request = itemRequestRepository.findById(id)
                 .orElseThrow(() -> new IdNotFoundException("Запрашиваемая вещь не с id = " + id + " не найдена"));
         return ItemRequestMapper.itemRequestToItemRequestDTO(request);

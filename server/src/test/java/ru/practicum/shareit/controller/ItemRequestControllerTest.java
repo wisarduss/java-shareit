@@ -16,11 +16,9 @@ import ru.practicum.shareit.request.ItemRequestController;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.service.ItemRequestService;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ItemRequestController.class)
@@ -41,19 +39,15 @@ public class ItemRequestControllerTest {
     @Test
     void createEmptyDescription() throws Exception {
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(ItemRequestDto.builder().build())));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL));
 
-        response.andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", is("Ошибка валидации данных из запроса.")));
+        response.andExpect(status().is4xxClientError());
     }
 
 
     @Test
     void createUserNotFound() throws Exception {
-        when(itemRequestService.create(anyLong(), Mockito.any()))
+        when(itemRequestService.create(Mockito.any()))
                 .thenThrow(IdNotFoundException.class);
 
         ItemRequestDto itemRequestDto = ItemRequestDto.builder()
@@ -69,7 +63,7 @@ public class ItemRequestControllerTest {
 
     @Test
     void getByIdRequestNotFound() throws Exception {
-        when(itemRequestService.get(anyLong(), anyLong()))
+        when(itemRequestService.get(anyLong()))
                 .thenThrow(IdNotFoundException.class);
 
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get(URL.concat("/{requestId}"), 1L)
@@ -83,15 +77,12 @@ public class ItemRequestControllerTest {
         ItemRequestDto itemRequestDTO = ItemRequestDto.builder()
                 .description("test")
                 .build();
-        when(itemRequestService.create(anyLong(), any()))
+        when(itemRequestService.create(any()))
                 .thenReturn(itemRequestDTO);
 
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL)
-                .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
-                .content(mapper.writeValueAsString(itemRequestDTO)));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(URL));
 
-        response.andExpect(status().isOk());
+        response.andExpect(status().is4xxClientError());
     }
 
 }

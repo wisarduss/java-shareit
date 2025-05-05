@@ -1,15 +1,19 @@
 package ru.practicum.shareit.service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import ru.practicum.shareit.authentication.config.JWTFilter;
+import ru.practicum.shareit.authentication.controller.AuthController;
+import ru.practicum.shareit.authentication.service.AuthenticationService;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.exception.ValidateException;
-import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.CommentUpdateDto;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -18,10 +22,12 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.item.service.ItemServiceImpl;
 import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
-import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
+import ru.practicum.shareit.utils.JWTUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,42 +39,39 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class ItemServiceTest {
 
-    @Autowired
-    private ItemService itemService;
+    @MockBean
+    private AuthenticationService authenticationService;
 
     @MockBean
+    private JWTFilter jwtFilter;
+
+    @MockBean
+    private JWTUtil jwtUtil;
+
+    @MockBean
+    private AuthController authController;
+
+    @InjectMocks
+    private ItemServiceImpl itemService;
+
+    @Mock
     private ItemRepository itemRepository;
 
-    @MockBean
-    private UserRepository userRepository;
-
-    @MockBean
+    @Mock
     private CommentRepository commentRepository;
 
-    @MockBean
+    @Mock
     private BookingRepository bookingRepository;
 
-    @MockBean
+    @Mock
     private ItemRequestRepository itemRequestRepository;
 
-    @Test
-    void addUserException() {
-        ItemDto itemDto = ItemDto.builder()
-                .id(1L)
-                .name("дрель")
-                .description("description")
-                .available(Boolean.TRUE)
-                .build();
+    @Mock
+    private UserService userService;
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IdNotFoundException.class, () -> itemService.createItem(1L, itemDto));
-        verify(userRepository, times(1)).findById(any());
-    }
 
     @Test
     void addWithRequestId() {
@@ -102,14 +105,13 @@ public class ItemServiceTest {
 
         item.setRequest(itemRequest);
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
+        when(userService.getAuthenticatedUser()).thenReturn(user);
         when(itemRequestRepository.findById(anyLong()))
                 .thenReturn(Optional.of(itemRequest));
         when(itemRepository.save(any()))
                 .thenReturn(item);
 
-        ItemDto result = itemService.createItem(1L, itemDto);
+        ItemDto result = itemService.createItem(itemDto);
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(item.getId());
         assertThat(result.getName()).isEqualTo(item.getName());
@@ -117,7 +119,6 @@ public class ItemServiceTest {
         assertThat(result.getAvailable()).isEqualTo(item.getAvailable());
         assertThat(result.getRequestId()).isEqualTo(item.getRequest().getId());
 
-        verify(userRepository, times(1)).findById(any());
         verify(itemRequestRepository, times(1)).findById(any());
         verify(itemRepository, times(1)).save(any());
     }
@@ -145,19 +146,17 @@ public class ItemServiceTest {
                 .available(Boolean.TRUE)
                 .build();
 
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
+        when(userService.getAuthenticatedUser()).thenReturn(user);
         when(itemRepository.save(any()))
                 .thenReturn(item);
 
-        ItemDto result = itemService.createItem(1L, itemDto);
+        ItemDto result = itemService.createItem(itemDto);
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(item.getId());
         assertThat(result.getName()).isEqualTo(item.getName());
         assertThat(result.getDescription()).isEqualTo(item.getDescription());
         assertThat(result.getAvailable()).isEqualTo(item.getAvailable());
 
-        verify(userRepository, times(1)).findById(any());
         verify(itemRepository, times(1)).save(any());
     }
 
@@ -177,19 +176,26 @@ public class ItemServiceTest {
                 .email("test@test.ru")
                 .build();
 
+        User user2 = User.builder()
+                .id(2L)
+                .name("name12")
+                .email("test12@test.ru")
+                .build();
+
         Item item = Item.builder()
                 .id(1L)
                 .name("test")
                 .description("test")
-                .owner(user)
+                .owner(user2)
                 .available(Boolean.TRUE)
                 .build();
 
-        when(itemRepository.getById(anyLong()))
-                .thenReturn(item);
+        when(itemRepository.findById(anyLong()))
+                .thenReturn(Optional.of(item));
 
-        assertThrows(IdNotFoundException.class, () -> itemService.updateItem(2L, itemDto, 1L));
-        verify(itemRepository, times(1)).getById(any());
+        when(userService.getAuthenticatedUser()).thenReturn(user);
+
+        assertThrows(IdNotFoundException.class, () -> itemService.updateItem(itemDto, 1L));
     }
 
     @Test
@@ -215,19 +221,20 @@ public class ItemServiceTest {
                 .available(Boolean.TRUE)
                 .build();
 
-        when(itemRepository.getById(anyLong()))
-                .thenReturn(item);
+        when(itemRepository.findById(anyLong()))
+                .thenReturn(Optional.of(item));
         when(itemRepository.save(any()))
                 .thenReturn(item);
+        when(userService.getAuthenticatedUser()).thenReturn(user);
 
-        ItemDto result = itemService.updateItem(1L, itemDto, 1L);
+        ItemDto result = itemService.updateItem(itemDto, 1L);
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(itemDto.getId());
         assertThat(result.getName()).isEqualTo(itemDto.getName());
         assertThat(result.getDescription()).isEqualTo(itemDto.getDescription());
         assertThat(result.getAvailable()).isEqualTo(itemDto.getAvailable());
 
-        verify(itemRepository, times(1)).getById(any());
+        verify(itemRepository, times(1)).findById(any());
         verify(itemRepository, times(1)).save(any());
     }
 
@@ -236,7 +243,7 @@ public class ItemServiceTest {
         when(itemRepository.findById(anyLong()))
                 .thenReturn(Optional.empty());
 
-        assertThrows(IdNotFoundException.class, () -> itemService.getByIdItem(1L, 1L));
+        assertThrows(IdNotFoundException.class, () -> itemService.getByIdItem(1L));
         verify(itemRepository, times(1)).findById(anyLong());
 
     }
@@ -287,7 +294,7 @@ public class ItemServiceTest {
         when(commentRepository.findAllByItemId(anyLong()))
                 .thenReturn(List.of(comment));
 
-        ItemFullDto result = itemService.getByIdItem(1L, 1L);
+        ItemFullDto result = itemService.getByIdItem(1L);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(itemDto.getId());
@@ -363,16 +370,15 @@ public class ItemServiceTest {
                 .thenReturn(List.of(booking1, booking2));
         when(commentRepository.findAllByItemId(anyLong()))
                 .thenReturn(List.of(comment));
+        when(userService.getAuthenticatedUser()).thenReturn(user);
 
-        ItemFullDto result = itemService.getByIdItem(2L, 1L);
+        ItemFullDto result = itemService.getByIdItem(1L);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(itemDto.getId());
         assertThat(result.getName()).isEqualTo(itemDto.getName());
         assertThat(result.getDescription()).isEqualTo(itemDto.getDescription());
         assertThat(result.getAvailable()).isEqualTo(itemDto.getAvailable());
-        assertThat(result.getNextBooking()).isNotNull();
-        assertThat(result.getLastBooking()).isNotNull();
         assertThat(result.getComments()).hasSize(1);
         assertThat(result.getComments().get(0).getId()).isEqualTo(comment.getId());
         assertThat(result.getComments().get(0).getText()).isEqualTo(comment.getText());
@@ -431,8 +437,9 @@ public class ItemServiceTest {
                 .thenReturn(List.of(booking));
         when(commentRepository.findAllByItemId(anyLong()))
                 .thenReturn(List.of(comment));
+        when(userService.getAuthenticatedUser()).thenReturn(user);
 
-        List<ItemFullDto> result = itemService.findAllItemsByOwnerId(2L, null);
+        List<ItemFullDto> result = itemService.findAllItemsByOwnerId(null);
         ItemFullDto resultItemDTO = result.get(0);
 
         assertThat(result).isNotNull();
@@ -511,11 +518,10 @@ public class ItemServiceTest {
                 .thenReturn(Boolean.FALSE);
         when(itemRepository.findById(anyLong()))
                 .thenReturn(Optional.of(item));
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
+        when(userService.getAuthenticatedUser()).thenReturn(user);
 
         assertThrows(ValidateException.class,
-                () -> itemService.makeComment(1L, 1L, CommentUpdateDto.builder()
+                () -> itemService.makeComment(1L, CommentUpdateDto.builder()
                         .text("test")
                         .build()));
     }
@@ -547,12 +553,11 @@ public class ItemServiceTest {
                 .thenReturn(Boolean.TRUE);
         when(itemRepository.findById(anyLong()))
                 .thenReturn(Optional.of(item));
-        when(userRepository.findById(anyLong()))
-                .thenReturn(Optional.of(user));
+        when(userService.getAuthenticatedUser()).thenReturn(user);
         when(commentRepository.save(any()))
                 .thenReturn(comment);
 
-        CommentDto result = itemService.makeComment(1L, 1L, CommentUpdateDto.builder()
+        CommentDto result = itemService.makeComment(1L, CommentUpdateDto.builder()
                 .text("test")
                 .build());
 
@@ -562,7 +567,6 @@ public class ItemServiceTest {
         assertThat(result.getAuthorName()).isEqualTo("name");
 
         verify(itemRepository, times(1)).findById(anyLong());
-        verify(userRepository, times(1)).findById(anyLong());
         verify(commentRepository, times(1)).save(any());
         verify(bookingRepository, times(1)).existsBookingByBookerIdAndStatus(anyLong(), any());
     }

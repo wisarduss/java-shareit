@@ -20,11 +20,6 @@ public class UserController {
         return userService.getAllUsers();
     }
 
-    @PostMapping
-    public UserDto createUser(@Validated @RequestBody UserDto userDto) {
-        return userService.createUser(userDto);
-    }
-
     @PatchMapping("/{userId}")
     public UserDto patchUser(@Validated @PathVariable Long userId, @RequestBody UserDto userDto) {
         return userService.updateUser(userId, userDto);

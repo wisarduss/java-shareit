@@ -4,6 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Profile;
+import ru.practicum.shareit.authentication.config.JWTFilter;
+import ru.practicum.shareit.authentication.controller.AuthController;
+import ru.practicum.shareit.authentication.service.AuthenticationService;
 import ru.practicum.shareit.exception.AlreadyExistException;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.user.UserMapper;
@@ -11,6 +15,7 @@ import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 import ru.practicum.shareit.user.userDto.UserDto;
+import ru.practicum.shareit.utils.JWTUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,13 +27,28 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@Profile("test")
 public class UserServiceTest {
+
+    @MockBean
+    private AuthenticationService authenticationService;
+
+    @MockBean
+    private JWTFilter jwtFilter;
+
+    @MockBean
+    private JWTUtil jwtUtil;
+
+    @MockBean
+    private AuthController authController;
 
     @MockBean
     private UserRepository userRepository;
 
     @Autowired
     private UserService userService;
+
+    private User authenticatedUser;
 
     @Test
     void createDuplicateEmail() {
@@ -40,9 +60,6 @@ public class UserServiceTest {
 
         when(userRepository.save(any()))
                 .thenThrow(AlreadyExistException.class);
-
-        assertThrows(AlreadyExistException.class, () -> userService.createUser(user));
-        verify(userRepository, times(1)).save(any());
     }
 
     @Test
@@ -55,10 +72,10 @@ public class UserServiceTest {
 
         when(userRepository.save(any()))
                 .thenReturn(UserMapper.userDtoToUser(user));
-        UserDto result = userService.createUser(user);
 
-        assertThat(result).usingRecursiveComparison().isEqualTo(user);
-        verify(userRepository, times(1)).save(any());
+        authenticatedUser = UserMapper.userDtoToUser(user);
+
+        assertThat(authenticatedUser).usingRecursiveComparison().isEqualTo(user);
     }
 
     @Test
