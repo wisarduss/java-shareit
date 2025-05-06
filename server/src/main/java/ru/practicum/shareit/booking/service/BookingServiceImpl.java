@@ -17,7 +17,6 @@ import ru.practicum.shareit.exception.RequestStatusException;
 import ru.practicum.shareit.exception.ValidateException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
