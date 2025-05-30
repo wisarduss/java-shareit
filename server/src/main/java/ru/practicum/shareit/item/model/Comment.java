@@ -19,6 +19,7 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "text")
     private String text;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -29,6 +30,7 @@ public class Comment {
     @JoinColumn(name = "author_id", nullable = false)
     private User user;
 
+    @Column(name = "created")
     private final LocalDateTime created = LocalDateTime.now();
 
 }

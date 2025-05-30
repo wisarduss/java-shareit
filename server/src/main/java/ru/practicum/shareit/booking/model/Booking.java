@@ -36,5 +36,6 @@ public class Booking {
     private User booker;
 
     @Transient
+    @Column(name = "status")
     private String status;
 }

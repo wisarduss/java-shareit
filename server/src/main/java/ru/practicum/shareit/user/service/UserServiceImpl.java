@@ -2,6 +2,7 @@ package ru.practicum.shareit.user.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -95,5 +96,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         userRepository.deleteById(userId);
     }
 
-
+    @Override
+    public void removeYourSelfProfile() {
+        User user = getAuthenticatedUser();
+        userRepository.deleteById(user.getId());
+    }
 }

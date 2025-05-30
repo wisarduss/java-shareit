@@ -8,12 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.category.dto.CategoryDto;
+import ru.practicum.shareit.category.model.Category;
+import ru.practicum.shareit.category.repository.CategoryRepository;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.exception.ValidateException;
-import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.CommentUpdateDto;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemFullDto;
+import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Comment;
@@ -27,8 +27,7 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +41,7 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
     private final BookingRepository bookingRepository;
     private final ItemRequestRepository requestRepository;
+    private final CategoryRepository categoryRepository;
     private final UserService userService;
 
     @Override
@@ -50,13 +50,23 @@ public class ItemServiceImpl implements ItemService {
         log.debug("Вещь создана");
         User user = userService.getAuthenticatedUser();
 
+        Set<Category> categories = new HashSet<>();
+
+        for (Long catId : itemDto.getCatIds()) {
+            Category category = categoryRepository.findById(catId)
+                    .orElseThrow(() -> new IdNotFoundException(String.format("категория с id = %d не найдена", catId)));
+            categories.add(category);
+        }
+
         if (itemDto.getRequestId() != null) {
             ItemRequest itemRequest = requestRepository.findById(itemDto.getRequestId())
                     .orElseThrow(() -> new IdNotFoundException("Запрос с id = " + itemDto.getRequestId() + "не найден"));
-            return ItemMapper.itemToItemDto(itemRepository.save(ItemMapper.itemDtoToItemWithRequest(itemDto, user, itemRequest)));
+            return ItemMapper.itemToItemDto(itemRepository.save(ItemMapper
+                    .itemDtoToItemWithRequest(itemDto, categories, user, itemRequest)));
         }
 
-        return ItemMapper.itemToItemDto(itemRepository.save(ItemMapper.itemDtoToItem(itemDto, user)));
+        return ItemMapper.itemToItemDto(itemRepository.save(ItemMapper
+                .itemDtoToItemWithoutRequest(itemDto, categories, user)));
     }
 
     @Override
@@ -75,11 +85,38 @@ public class ItemServiceImpl implements ItemService {
         if (itemDto.getDescription() != null) {
             item.setDescription(itemDto.getDescription());
         }
+        if (itemDto.getPhotoUrl() != null) {
+            item.setPhotoUrl(itemDto.getPhotoUrl());
+        }
+        if (itemDto.getPrice() != null) {
+            item.setPrice(itemDto.getPrice());
+        }
         if (itemDto.getAvailable() != null) {
             item.setAvailable(itemDto.getAvailable());
         }
 
         return ItemMapper.itemToItemDto(itemRepository.save(item));
+    }
+
+    @Override
+    public Map<String, List<ItemResponseDto>> getAll() {
+        List<Item> items = itemRepository.findAll();
+
+        Map<String, List<ItemResponseDto>> result = new HashMap<>();
+
+        for (Item item : items) {
+            ItemResponseDto itemDto = ItemMapper.itemToItemResponseDto(item);
+
+            // Получаем список названий категорий для этого товара
+            String categories = item.getCategories().stream()
+                    .map(category -> getCategoryTitleById(category.getId()))
+                    .collect(Collectors.joining(", ", "(", ")"));
+
+            // Добавляем товар в результат для каждой категории
+            result.computeIfAbsent(categories, k -> new ArrayList<>()).add(itemDto);
+        }
+
+        return result;
     }
 
     @Override
@@ -127,9 +164,24 @@ public class ItemServiceImpl implements ItemService {
         if (text.isEmpty()) {
             return List.of();
         }
+
         return itemRepository.search(text, pageable).stream()
                 .distinct()
                 .map(ItemMapper::itemToItemDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ItemResponseDto> getItemForCatId(Long catId) {
+
+        categoryRepository.findById(catId)
+                .orElseThrow(() -> new IdNotFoundException(String
+                        .format("Извините такой категории с id = %d не существует", catId)));
+
+        List<Item> items = itemRepository.getItemForCatId(catId);
+
+        return items.stream()
+                .map(ItemMapper::itemToItemResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -168,5 +220,11 @@ public class ItemServiceImpl implements ItemService {
                 .filter(booking -> booking.getEnd().isBefore(LocalDateTime.now()))
                 .max(Comparator.comparing(Booking::getStart))
                 .orElse(null);
+    }
+
+    private String getCategoryTitleById(Long categoryId) {
+        Optional<Category> categoryOptional = categoryRepository.findById(categoryId);
+
+        return categoryOptional.map(Category::getTitle).orElse(null);
     }
 }

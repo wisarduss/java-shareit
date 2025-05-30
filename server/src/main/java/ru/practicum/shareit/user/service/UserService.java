@@ -18,4 +18,6 @@ public interface UserService {
 
     void removeUserById(Long userId);
 
+    void removeYourSelfProfile();
+
 }

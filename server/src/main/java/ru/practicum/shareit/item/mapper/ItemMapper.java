@@ -2,15 +2,14 @@ package ru.practicum.shareit.item.mapper;
 
 import lombok.experimental.UtilityClass;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.ItemBookingDto;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemFullDto;
+import ru.practicum.shareit.category.model.Category;
+import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
+import java.util.Set;
 
 @UtilityClass
 public class ItemMapper {
@@ -20,6 +19,20 @@ public class ItemMapper {
                 .id(item.getId())
                 .name(item.getName())
                 .description(item.getDescription())
+                .photoUrl(item.getPhotoUrl())
+                .price(item.getPrice())
+                .available(item.getAvailable())
+                .requestId(item.getRequest() != null ? item.getRequest().getId() : null)
+                .build();
+    }
+
+    public static ItemResponseDto itemToItemResponseDto(Item item) {
+        return ItemResponseDto.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .description(item.getDescription())
+                .photoUrl(item.getPhotoUrl())
+                .price(item.getPrice())
                 .available(item.getAvailable())
                 .requestId(item.getRequest() != null ? item.getRequest().getId() : null)
                 .build();
@@ -31,6 +44,8 @@ public class ItemMapper {
                 .id(item.getId())
                 .name(item.getName())
                 .description(item.getDescription())
+                .photoUrl(item.getPhotoUrl())
+                .price(item.getPrice())
                 .available(item.getAvailable())
                 .lastBooking(lastBooking != null ? ItemBookingDto.builder()
                         .id(lastBooking.getId())
@@ -49,19 +64,39 @@ public class ItemMapper {
                 .id(dto.getId())
                 .name(dto.getName())
                 .description(dto.getDescription())
+                .price(dto.getPrice())
+                .photoUrl(dto.getPhotoUrl())
                 .available(dto.getAvailable())
                 .owner(owner)
                 .build();
     }
 
-    public static Item itemDtoToItemWithRequest(ItemDto dto, User owner, ItemRequest request) {
+    public static Item itemDtoToItemWithRequest(ItemDto dto, Set<Category> categories,
+                                                User owner, ItemRequest request) {
         return Item.builder()
                 .id(dto.getId())
                 .name(dto.getName())
                 .description(dto.getDescription())
+                .photoUrl(dto.getPhotoUrl())
+                .price(dto.getPrice())
                 .available(dto.getAvailable())
                 .owner(owner)
                 .request(request)
+                .categories(categories)
+                .build();
+    }
+
+    public static Item itemDtoToItemWithoutRequest(ItemDto dto, Set<Category> categories,
+                                                User owner) {
+        return Item.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .photoUrl(dto.getPhotoUrl())
+                .price(dto.getPrice())
+                .available(dto.getAvailable())
+                .owner(owner)
+                .categories(categories)
                 .build();
     }
 }

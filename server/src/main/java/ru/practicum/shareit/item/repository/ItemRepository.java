@@ -31,4 +31,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     void updateItemAvailableById(@Param("id") Long id, @Param("available") boolean available);
 
     List<Item> findAllByRequest_Id(Long requestId);
+
+    @Query("SELECT i FROM Item i JOIN i.categories c WHERE c.id = :catId")
+    List<Item> getItemForCatId(@Param("catId") Long catId);
 }
