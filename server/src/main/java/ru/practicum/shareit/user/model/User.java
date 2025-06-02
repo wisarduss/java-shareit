@@ -1,5 +1,6 @@
 package ru.practicum.shareit.user.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import javax.persistence.*;
@@ -11,6 +12,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
+@Schema(description = "Сущность пользователя")
 public class User {
 
     @Id
@@ -22,4 +24,6 @@ public class User {
     private String email;
     @Column(name = "password")
     private String password;
+
+    /// TODO: организовать рейтинг и отправку писем на почту по возможности
 }

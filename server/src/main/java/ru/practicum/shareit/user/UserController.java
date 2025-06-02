@@ -1,5 +1,6 @@
 package ru.practicum.shareit.user;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -13,6 +14,7 @@ import java.util.List;
 @RequestMapping(path = "/users")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "User Controller", description = "Управление пользователями")
 public class UserController {
     private final UserService userService;
 

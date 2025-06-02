@@ -10,6 +10,7 @@ import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @UtilityClass
 public class ItemMapper {
@@ -22,6 +23,8 @@ public class ItemMapper {
                 .photoUrl(item.getPhotoUrl())
                 .price(item.getPrice())
                 .available(item.getAvailable())
+                .catIds(item.getCategories().stream()
+                        .map(Category::getId).collect(Collectors.toSet()))
                 .requestId(item.getRequest() != null ? item.getRequest().getId() : null)
                 .build();
     }
