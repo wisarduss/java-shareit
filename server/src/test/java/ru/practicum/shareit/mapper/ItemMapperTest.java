@@ -2,6 +2,7 @@ package ru.practicum.shareit.mapper;
 
 import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.category.model.Category;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemFullDto;
@@ -10,9 +11,12 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,11 +24,19 @@ public class ItemMapperTest {
 
     @Test
     void toDTOWithoutRequestTest() {
+        Set<Category> sets = new HashSet<>();
+        sets.add(
+                Category.builder().id(1L).title("Для дома").build()
+        );
+
         Item item = Item.builder()
                 .id(1L)
                 .name("дрель")
                 .description("description")
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
                 .available(Boolean.TRUE)
+                .categories(sets)
                 .build();
 
         ItemDto result = ItemMapper.itemToItemDto(item);
@@ -37,11 +49,20 @@ public class ItemMapperTest {
 
     @Test
     void toDTOWithRequestTest() {
+        Set<Category> sets = new HashSet<>();
+        sets.add(
+                Category.builder().id(1L).title("Для дома").build()
+        );
+
         Item item = Item.builder()
                 .id(1L)
                 .name("test")
                 .description("test")
                 .available(Boolean.TRUE)
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .available(Boolean.TRUE)
+                .categories(sets)
                 .request(ItemRequest.builder()
                         .id(1L)
                         .build())

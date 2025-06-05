@@ -9,9 +9,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import ru.practicum.shareit.authentication.config.JWTFilter;
 import ru.practicum.shareit.authentication.controller.AuthController;
 import ru.practicum.shareit.authentication.service.AuthenticationService;
-import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.category.model.Category;
+import ru.practicum.shareit.category.repository.CategoryRepository;
 import ru.practicum.shareit.exception.IdNotFoundException;
 import ru.practicum.shareit.exception.ValidateException;
 import ru.practicum.shareit.item.dto.CommentDto;
@@ -23,15 +25,18 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.item.service.ItemServiceImpl;
-import ru.practicum.shareit.request.ItemRequestRepository;
+import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 import ru.practicum.shareit.utils.JWTUtil;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,6 +73,9 @@ public class ItemServiceTest {
 
     @Mock
     private ItemRequestRepository itemRequestRepository;
+
+    @Mock
+    private CategoryRepository categoryRepository;
 
     @Mock
     private UserService userService;
@@ -125,10 +133,23 @@ public class ItemServiceTest {
 
     @Test
     void addWithoutRequestId() {
+
+        Category category = new Category(1L, "Для дома");
+        Set<Category> sets = new HashSet<>();
+        sets.add(
+                category
+        );
+
+        Set<Long> setsLong = new HashSet<>();
+        setsLong.add(category.getId());
+
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
                 .name("дрель")
                 .description("description")
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .catIds(setsLong)
                 .available(Boolean.TRUE)
                 .build();
 
@@ -143,12 +164,17 @@ public class ItemServiceTest {
                 .name("test")
                 .description("test")
                 .owner(user)
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .categories(sets)
                 .available(Boolean.TRUE)
                 .build();
 
         when(userService.getAuthenticatedUser()).thenReturn(user);
         when(itemRepository.save(any()))
                 .thenReturn(item);
+        when(categoryRepository.findById(anyLong()))
+                .thenReturn(Optional.of(category));
 
         ItemDto result = itemService.createItem(itemDto);
         assertThat(result).isNotNull();

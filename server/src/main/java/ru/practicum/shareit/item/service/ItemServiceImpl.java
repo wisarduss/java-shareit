@@ -5,10 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
-import ru.practicum.shareit.category.dto.CategoryDto;
 import ru.practicum.shareit.category.model.Category;
 import ru.practicum.shareit.category.repository.CategoryRepository;
 import ru.practicum.shareit.exception.IdNotFoundException;
@@ -20,9 +19,9 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.request.ItemRequestRepository;
+import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
-import ru.practicum.shareit.user.UserRepository;
+import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
@@ -193,10 +192,10 @@ public class ItemServiceImpl implements ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + itemId + " не найдена"));
 
-        if (!bookingRepository.existsBookingByBookerIdAndStatus(user.getId(),
+/*        if (!bookingRepository.existsBookingByBookerIdAndStatus(user.getId(),
                 BookingStatus.APPROVED.name())) {
             throw new ValidateException();
-        }
+        }*/
         Comment comment = commentRepository.save(Comment.builder()
                 .text(text.getText())
                 .item(item)

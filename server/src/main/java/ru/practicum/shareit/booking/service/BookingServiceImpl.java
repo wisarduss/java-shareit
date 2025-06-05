@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.BookingMapper;
-import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
+import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingUpdateDto;
 import ru.practicum.shareit.booking.dto.RequestBookingStatus;
@@ -39,13 +39,14 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingDto create(BookingUpdateDto bookingParam) {
         validateDate(bookingParam);
+
         User user = userService.getAuthenticatedUser();
 
         Item item = itemRepository.findById(bookingParam.getItemId())
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + bookingParam.getItemId() + " не найдена"));
 
         if (user.getId().equals(item.getOwner().getId())) {
-            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не найден");
+            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не может забронировать свой же товар");
         }
         if (!itemRepository.isItemAvailable(bookingParam.getItemId())) {
             throw new ItemNotAvailableException(bookingParam.getItemId().toString());

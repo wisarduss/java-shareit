@@ -25,5 +25,4 @@ public class User {
     @Column(name = "password")
     private String password;
 
-    /// TODO: организовать рейтинг и отправку писем на почту по возможности
 }

@@ -2,7 +2,6 @@ package ru.practicum.shareit.authentication.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,15 +13,13 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.shareit.authentication.dto.AuthenticationDto;
 import ru.practicum.shareit.authentication.service.AuthenticationService;
 import ru.practicum.shareit.exception.BadRegistrationException;
-import ru.practicum.shareit.user.UserMapper;
+import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.userDto.UserDto;
 import ru.practicum.shareit.utils.JWTUtil;
 import ru.practicum.shareit.utils.UserValidator;
 
 import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor

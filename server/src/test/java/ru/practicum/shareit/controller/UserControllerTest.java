@@ -20,7 +20,7 @@ import org.springframework.web.context.WebApplicationContext;
 import ru.practicum.shareit.authentication.security.PersonDetails;
 import ru.practicum.shareit.exception.ErrorHandler;
 import ru.practicum.shareit.exception.IdNotFoundException;
-import ru.practicum.shareit.user.UserController;
+import ru.practicum.shareit.user.controller.UserController;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 import ru.practicum.shareit.user.userDto.UserDto;
