@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
 
@@ -35,58 +37,95 @@ public class BookingServiceImpl implements BookingService {
     private final EntityManager entityManager;
     private final UserService userService;
 
+    /**
+     * Метод создает заявку на бронирование вещи
+     *
+     *
+     * @author Borodulin Maxim
+     * @param bookingParam dto для обработки данных
+     * @return сохраненную заяку на бронирование
+     */
     @Override
     @Transactional
     public BookingDto create(BookingUpdateDto bookingParam) {
         validateDate(bookingParam);
+        log.debug("Валидация дат прошла успешно!");
 
         User user = userService.getAuthenticatedUser();
 
         Item item = itemRepository.findById(bookingParam.getItemId())
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + bookingParam.getItemId() + " не найдена"));
 
+
         if (user.getId().equals(item.getOwner().getId())) {
-            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не может забронировать свой же товар");
+            throw new IdNotFoundException("Пользователь с id = " + user.getId() +
+                    " не может забронировать свой же товар");
         }
         if (!itemRepository.isItemAvailable(bookingParam.getItemId())) {
             throw new ItemNotAvailableException(bookingParam.getItemId().toString());
         }
 
+        log.debug("Все проверки пройдены");
+
         bookingParam.setStatus(BookingStatus.WAITING.name());
 
         Booking booking = bookingRepository.save(
                 BookingMapper.bookingDtoToBooking(bookingParam, user, item));
+
+        log.debug("Статус изменен на ожидание, броинрование создалось");
+
         return BookingMapper.bookingToBookingDTO(booking);
     }
 
-
+    /**
+     * Метод реалилизующий алгоритм подтверждения бронирования
+     *
+     * @author Borodulin Maxim
+     * @param bookingId идентификатора бронирования
+     * @param isApproved подтвердил ли пользователь владелец
+     *
+     * @return Измененый статус броинрования в зависимости от выбора владельца
+     */
     @Override
     @Transactional
     public BookingDto updateBooking(Long bookingId, Boolean isApproved) {
         User user = userService.getAuthenticatedUser();
-
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IdNotFoundException("Бронирования с id = " + bookingId + " не найдено"));
 
+        log.debug("Бронирование найдено");
+
         if (BookingStatus.valueOf(String.valueOf(booking.getStatus())).equals(BookingStatus.APPROVED)) {
-            throw new ValidateException();
+            throw new ValidateException("После подтверждения бронирования вещи '" +
+                    booking.getItem().getName() + "' нельзя отменить решение");
         }
         Item item = itemRepository.findById(booking.getItem().getId())
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + booking.getItem().getId() + " не найдена"));
 
+        log.debug("Вещь из бронирования прошла проверку");
+
         if (!user.getId().equals(item.getOwner().getId())) {
-            throw new IdNotFoundException("Пользователь с id = " + user.getId() + " не найден");
+            throw new IdNotFoundException("Пользователь с id = " + user.getId()
+                    + " не может подтверждать не свой товар");
         }
+
+        log.debug("Первичная валидация пройденна");
+
         if (isApproved) {
-            itemRepository.updateItemAvailableById(item.getId(), isApproved);
+            itemRepository.updateItemAvailableById(item.getId(), false);
             bookingRepository.updateBookingStatusById(bookingId, BookingStatus.APPROVED.name());
+            log.debug("Владелец подтвердил бронирование");
         } else {
             bookingRepository.updateBookingStatusById(bookingId, BookingStatus.REJECTED.name());
+            log.debug("Владелец отклонил бронирование");
         }
+
+
         var result = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IdNotFoundException("Бронирования с id = " + bookingId + " не найдено"));
 
         entityManager.refresh(result);
+        log.debug("Метод успешно выполнен");
         return BookingMapper.bookingToBookingDTO(result);
     }
 
@@ -176,10 +215,17 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    /**
+     * @author Borodulin Maxim
+     * Вспомогательный метод для валидации дат броинрования
+     *
+     * @param bookingParam DTO преобразованная от запроса пользователя
+     */
     private void validateDate(BookingUpdateDto bookingParam) {
         if (bookingParam.getStart().equals(bookingParam.getEnd())
                 || bookingParam.getStart().isAfter(bookingParam.getEnd())
         ) {
+            log.debug("Пользователь ввел неккореткные данные");
             throw new ValidateException();
         }
     }

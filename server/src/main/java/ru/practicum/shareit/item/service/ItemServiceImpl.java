@@ -43,6 +43,15 @@ public class ItemServiceImpl implements ItemService {
     private final CategoryRepository categoryRepository;
     private final UserService userService;
 
+    /**
+     * Метод создания карточки товара. Существует несколько сценариев.
+     * 1) Пользователь сам выкладывает объявления и ждет заявок на бронирование.
+     * 2) Арендодатель замечает запрос пользователя об необходимой вещи и указывает его в качестве карточки товара.
+     *    После публикации объявления пользователю приходит уведомление о том, что была выложена необходимая ему вещь.
+     *
+     * @param itemDto Карточка товара
+     * @return созданный товар
+     */
     @Override
     @Transactional
     public ItemDto createItem(ItemDto itemDto) {
@@ -59,7 +68,8 @@ public class ItemServiceImpl implements ItemService {
 
         if (itemDto.getRequestId() != null) {
             ItemRequest itemRequest = requestRepository.findById(itemDto.getRequestId())
-                    .orElseThrow(() -> new IdNotFoundException("Запрос с id = " + itemDto.getRequestId() + "не найден"));
+                    .orElseThrow(() -> new IdNotFoundException("Запрос с id = " + itemDto.getRequestId()
+                            + "не найден"));
             return ItemMapper.itemToItemDto(itemRepository.save(ItemMapper
                     .itemDtoToItemWithRequest(itemDto, categories, user, itemRequest)));
         }
@@ -192,10 +202,10 @@ public class ItemServiceImpl implements ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IdNotFoundException("Вещь с id = " + itemId + " не найдена"));
 
-/*        if (!bookingRepository.existsBookingByBookerIdAndStatus(user.getId(),
+        if (!bookingRepository.existsBookingByBookerIdAndStatus(user.getId(),
                 BookingStatus.APPROVED.name())) {
             throw new ValidateException();
-        }*/
+        }
         Comment comment = commentRepository.save(Comment.builder()
                 .text(text.getText())
                 .item(item)

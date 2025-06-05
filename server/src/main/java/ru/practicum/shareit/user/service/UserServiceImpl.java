@@ -75,6 +75,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (userDto.getEmail() != null) {
             user.setEmail(userDto.getEmail());
         }
+        if (userDto.getPassword() != null) {
+            user.setPassword(userDto.getPassword());
+        }
 
         return UserMapper.userToUserDto(userRepository.save(user));
     }

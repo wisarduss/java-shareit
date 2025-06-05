@@ -14,21 +14,22 @@ import java.util.Date;
 @Component
 public class JWTUtil {
 
-    private static final Date JWT_TOKEN_LIFE = Date.from(ZonedDateTime.now().plusHours(1).toInstant());
-
     @Value("${jwt_secret}")
     private String secret;
 
     public String generateToken(String email) {
+        Date issuedAt = new Date();
+        Date expiresAt = Date.from(ZonedDateTime.now().plusHours(1).toInstant());
 
         return JWT.create()
                 .withSubject("User details")
                 .withClaim("email", email)
-                .withIssuedAt(new Date())
+                .withIssuedAt(issuedAt)
                 .withIssuer("Borodulin")
-                .withExpiresAt(JWT_TOKEN_LIFE)
+                .withExpiresAt(expiresAt)
                 .sign(Algorithm.HMAC256(secret));
     }
+
 
     public String validateTokenAndRetrieveClaim(String token) throws JWTVerificationException {
         JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secret))

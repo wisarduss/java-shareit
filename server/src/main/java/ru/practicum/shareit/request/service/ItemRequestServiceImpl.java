@@ -25,9 +25,15 @@ import java.util.stream.Collectors;
 public class ItemRequestServiceImpl implements ItemRequestService {
 
     private final ItemRequestRepository itemRequestRepository;
-    private final UserRepository userRepository;
     private final UserService userService;
 
+    /**
+     * Метод создания запроса необходимиой вещи
+     *
+     * @author Borodulin Maxim
+     * @param requestDTO преобразованные данные из запроса пользователя
+     * @return созданный запрос
+     */
     @Override
     @Transactional
     public ItemRequestDto create(RequestDto requestDTO) {
@@ -35,6 +41,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         User user = userService.getAuthenticatedUser();
 
         var result = itemRequestRepository.save(ItemRequestMapper.itemRequestDtoToItemRequest(user, requestDTO));
+        log.debug("Запрос успешно прошел проверку");
         return ItemRequestMapper.itemRequestToItemRequestDTO(result);
     }
 

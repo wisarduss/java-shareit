@@ -83,24 +83,41 @@ public class ItemServiceTest {
 
     @Test
     void addWithRequestId() {
+        Category category = new Category(1L, "Для дома");
+        Set<Category> sets = new HashSet<>();
+        sets.add(
+                category
+        );
+
+        Set<Long> setsLong = new HashSet<>();
+        setsLong.add(category.getId());
+
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
                 .name("дрель")
                 .description("description")
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .catIds(setsLong)
                 .available(Boolean.TRUE)
                 .build();
 
         itemDto.setRequestId(1L);
+
         User user = User.builder()
                 .id(1L)
                 .name("name")
                 .email("test@test.ru")
+                .password("12345678")
                 .build();
 
         Item item = Item.builder()
                 .id(1L)
                 .name("test")
                 .description("test")
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .categories(sets)
                 .owner(user)
                 .available(Boolean.TRUE)
                 .build();
@@ -118,6 +135,8 @@ public class ItemServiceTest {
                 .thenReturn(Optional.of(itemRequest));
         when(itemRepository.save(any()))
                 .thenReturn(item);
+        when(categoryRepository.findById(anyLong()))
+                .thenReturn(Optional.of(category));
 
         ItemDto result = itemService.createItem(itemDto);
         assertThat(result).isNotNull();
@@ -226,10 +245,22 @@ public class ItemServiceTest {
 
     @Test
     void edit() {
+        Category category = new Category(1L, "Для дома");
+        Set<Category> sets = new HashSet<>();
+        sets.add(
+                category
+        );
+
+        Set<Long> setsLong = new HashSet<>();
+        setsLong.add(category.getId());
+
         ItemDto itemDto = ItemDto.builder()
                 .id(1L)
                 .name("дрель")
                 .description("description")
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .catIds(setsLong)
                 .available(Boolean.TRUE)
                 .build();
 
@@ -237,12 +268,16 @@ public class ItemServiceTest {
                 .id(1L)
                 .name("name")
                 .email("test@test.ru")
+                .password("12345678")
                 .build();
 
         Item item = Item.builder()
                 .id(1L)
                 .name("test")
                 .description("test")
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .categories(sets)
                 .owner(user)
                 .available(Boolean.TRUE)
                 .build();
@@ -497,16 +532,29 @@ public class ItemServiceTest {
 
     @Test
     void search() {
+        Category category = new Category(1L, "Для дома");
+        Set<Category> sets = new HashSet<>();
+        sets.add(
+                category
+        );
+
+        Set<Long> setsLong = new HashSet<>();
+        setsLong.add(category.getId());
+
         User user = User.builder()
                 .id(1L)
                 .name("name")
                 .email("test@test.ru")
+                .password("12345678")
                 .build();
 
         Item item = Item.builder()
                 .id(1L)
                 .name("test")
                 .description("test")
+                .photoUrl("url")
+                .price(BigDecimal.valueOf(500))
+                .categories(sets)
                 .owner(user)
                 .available(Boolean.TRUE)
                 .build();

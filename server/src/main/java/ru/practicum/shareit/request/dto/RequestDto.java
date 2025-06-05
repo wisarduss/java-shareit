@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 @Data
 @Builder(toBuilder = true)
@@ -12,5 +14,7 @@ import javax.validation.constraints.NotBlank;
 public class RequestDto {
 
     @NotBlank
+    @NotEmpty
+    @NotNull
     private String description;
 }
