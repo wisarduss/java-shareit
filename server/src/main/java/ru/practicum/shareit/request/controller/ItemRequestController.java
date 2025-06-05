@@ -1,5 +1,6 @@
 package ru.practicum.shareit.request.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -14,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping(path = "/requests")
 @AllArgsConstructor
+@Tag(name = "Request Controller", description = "Управление запросами")
 public class ItemRequestController {
     private final ItemRequestService itemRequestService;
 

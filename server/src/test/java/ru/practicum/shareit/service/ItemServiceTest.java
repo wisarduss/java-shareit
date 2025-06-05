@@ -47,18 +47,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class ItemServiceTest {
 
-    @MockBean
-    private AuthenticationService authenticationService;
-
-    @MockBean
-    private JWTFilter jwtFilter;
-
-    @MockBean
-    private JWTUtil jwtUtil;
-
-    @MockBean
-    private AuthController authController;
-
     @InjectMocks
     private ItemServiceImpl itemService;
 

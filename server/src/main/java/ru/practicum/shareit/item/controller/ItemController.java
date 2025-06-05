@@ -1,5 +1,6 @@
 package ru.practicum.shareit.item.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/items")
 @RequiredArgsConstructor
+@Tag(name = "Item Controller", description = "Управление вещами")
 public class ItemController {
     private final ItemService itemService;
 

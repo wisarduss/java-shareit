@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.annotation.Validated;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping(path = "/bookings")
 @RequiredArgsConstructor
+@Tag(name = "Booking Controller", description = "Управление бронированиями")
 @Validated
 public class BookingController {
     private final BookingService bookingService;

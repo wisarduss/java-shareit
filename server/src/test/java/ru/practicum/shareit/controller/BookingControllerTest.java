@@ -3,6 +3,8 @@ package ru.practicum.shareit.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.hamcrest.CoreMatchers.is;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -234,7 +236,6 @@ public class BookingControllerTest {
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.patch(URL.concat("/{bookingId}"), 1L)
                 .param("approved", Boolean.FALSE.toString())
                 .header("Content-Type", "application/json")
-                .header("X-Sharer-User-Id", 1L)
                 .content(mapper.writeValueAsString(booking)));
 
         response.andExpect(status().is4xxClientError());
@@ -310,5 +311,4 @@ public class BookingControllerTest {
 
         response.andExpect(status().isOk());
     }
-
 }

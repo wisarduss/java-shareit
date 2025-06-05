@@ -1,5 +1,6 @@
 package ru.practicum.shareit.category.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.category.dto.CategoryDto;
@@ -14,6 +15,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/catalog")
+@Tag(name = "Category Controller", description = "Управление категориями")
 public class CategoryController {
 
     private final ItemService itemService;

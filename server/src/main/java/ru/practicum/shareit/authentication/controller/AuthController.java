@@ -1,5 +1,6 @@
 package ru.practicum.shareit.authentication.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,7 @@ import javax.validation.Valid;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/auth")
+@Tag(name = "Auth Controller", description = "Управление аутентификацией")
 @Slf4j
 public class AuthController {
 
